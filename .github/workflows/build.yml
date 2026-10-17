@@ -1,0 +1,92 @@
+name: Build
+
+# Builds the Windows executable on every push / pull request.
+# Pushing a tag that starts with "v" (for example v1.0.0) also publishes a GitHub Release
+# with RoadRacer-windows.zip attached.
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+env:
+  GODOT_VERSION: "4.7.2"
+
+jobs:
+  windows:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache Godot downloads
+        uses: actions/cache@v4
+        with:
+          path: ~/godot-download
+          key: godot-${{ env.GODOT_VERSION }}
+
+      - name: Download Godot and export templates
+        run: |
+          mkdir -p ~/godot-download
+          cd ~/godot-download
+          base="https://github.com/godotengine/godot-builds/releases/download/${GODOT_VERSION}-stable"
+          [ -f godot.zip ] || curl -fsSL -o godot.zip "$base/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          [ -f templates.tpz ] || curl -fsSL -o templates.tpz "$base/Godot_v${GODOT_VERSION}-stable_export_templates.tpz"
+
+      - name: Install Godot and export templates
+        run: |
+          cd ~/godot-download
+          unzip -q -o godot.zip
+          sudo install -m 755 "Godot_v${GODOT_VERSION}-stable_linux.x86_64" /usr/local/bin/godot
+          templates_dir="$HOME/.local/share/godot/export_templates/${GODOT_VERSION}.stable"
+          mkdir -p "$templates_dir"
+          unzip -q -o templates.tpz -d templates-unpacked
+          mv templates-unpacked/templates/* "$templates_dir/"
+          godot --version
+
+      - name: Import project resources
+        run: godot --headless --path . --import || true
+
+      - name: Export Windows build
+        run: |
+          mkdir -p build
+          godot --headless --path . --export-release "Windows Desktop" build/RoadRacer.exe
+          ls -l build
+
+      - name: Check the exe icon / name were applied
+        run: |
+          # Godot edits the exe resources itself (no rcedit / wine needed); fail if that did not happen.
+          strings -el build/RoadRacer.exe | grep -q "Road Racer"
+
+      - name: Package
+        run: |
+          cd build
+          zip RoadRacer-windows.zip RoadRacer.exe
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: RoadRacer-windows
+          path: build/RoadRacer-windows.zip
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: windows
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: RoadRacer-windows
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" RoadRacer-windows.zip \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "Road Racer $GITHUB_REF_NAME" \
+            --generate-notes

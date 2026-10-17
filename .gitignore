@@ -1,0 +1,37 @@
+# Godot generated / cache
+.godot/
+.import/
+*.translation
+
+# Build output
+build/
+export/
+*.exe
+*.pck
+*.zip
+*.rar
+*.apk
+*.aab
+
+# Local tools (portable Godot editor etc.)
+tools/
+
+# Raw asset packs that are not used by the game.
+# The files the game actually loads live in assets/.
+music_pack/
+vehicle_pack/
+kenney_ui-pack-adventure/
+
+# Export secrets / signing
+export_credentials.cfg
+*.keystore
+*.jks
+
+# Editor / OS files
+.vscode/
+.idea/
+.claude/
+.DS_Store
+Thumbs.db
+desktop.ini
+*.tmp
