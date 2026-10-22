@@ -46,6 +46,7 @@ func setup(stage_index: int) -> void:
 	level = Difficulty.level(level_name)
 	cp_bonus = Difficulty.checkpoint_bonus(stage, level)
 	rng.seed = 7919 * (stage_index + 1) + 13
+	seed(rng.seed)   # the global RNG (rivals, shuffles) repeats too, so a run can be replayed exactly
 	road = Road.new()
 	add_child(road)
 	road.setup(stage, rng.randi())

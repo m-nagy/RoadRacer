@@ -187,6 +187,7 @@ func _process(delta: float) -> void:
 	if not world.running:
 		return
 	_t += delta
+	_sample_perf()
 	if keydrive:
 		_kd("h", _t > 1.0)                         # P1 default fast key
 		_kd("d", _t > 3.0 and _t < 3.4)            # P1 default right key
@@ -291,8 +292,29 @@ func _process(delta: float) -> void:
 		for q in world.players:
 			cr += q.crashes
 		var eff: float = world.road.length / maxf(world.t - cr * Difficulty.CRASH_COST / float(world.players.size()), 1.0)
+		for q in world.players:
+			print("[totals] P%d score=%d crashes=%d overtakes=%d state=%d d=%.0f" % [q.slot + 1, int(q.score), q.crashes, q.overtakes, q.state, q.d()])
+		print("[perf] samples=%d process_ms avg=%.3f max=%.3f | physics_ms avg=%.3f max=%.3f" % [_perf_n, _perf_proc / maxf(_perf_n, 1), _perf_proc_max, _perf_phys / maxf(_perf_n, 1), _perf_phys_max])
 		print("[autotest] finished at t=%.1f  sim_t=%.1f length=%.0f crashes=%d  v_eff=%.0f px/s  state=%d time_left=%.0f fuel=%d/%d" % [_t, world.t, world.road.length, cr, eff, wp.state, wp.time_left, world.pickups_total - world.pickups.size(), world.pickups_total])
 		get_tree().quit()
+
+
+var _perf_n := 0
+var _perf_proc := 0.0
+var _perf_proc_max := 0.0
+var _perf_phys := 0.0
+var _perf_phys_max := 0.0
+
+
+## Engine-reported cost (ms) of the last frame's idle-process and physics-process steps.
+func _sample_perf() -> void:
+	var pr := Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0
+	var ph := Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0
+	_perf_n += 1
+	_perf_proc += pr
+	_perf_phys += ph
+	_perf_proc_max = maxf(_perf_proc_max, pr)
+	_perf_phys_max = maxf(_perf_phys_max, ph)
 
 
 func _drive_shortcut(world: World) -> void:
