@@ -1,21 +1,13 @@
 [gd_resource type="Resource" script_class="WeatherData" format=3]
 
-[ext_resource type="Script" path="res://data/weather_layer.gd" id="1_st3rn"]
 [ext_resource type="Script" path="res://data/weather_data.gd" id="2_dta4c"]
-
-[sub_resource type="Resource" id="Resource_nkmhv"]
-script = ExtResource("1_st3rn")
-amount = 22
-lifetime = 7.0
-speed = 100.0
-shape = 2
-color = Color(0.92, 0.94, 0.97, 0.16)
-scale = 5.0
 
 [resource]
 script = ExtResource("2_dta4c")
 id = "fog"
 label = "Fog"
 grip = 0.9
-tint = Color(0.8, 0.84, 0.88, 0.32)
-layers = Array[ExtResource("1_st3rn")]([SubResource("Resource_nkmhv")])
+tint = Color(0.8, 0.84, 0.88, 0.03)
+fog_banks = 0.45
+fog_alpha = 0.85
+fog_haze = 0.25

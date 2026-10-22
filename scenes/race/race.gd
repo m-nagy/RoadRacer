@@ -13,6 +13,7 @@ class View:
 	var viewport: SubViewport
 	var camera: Camera2D
 	var hud: Hud
+	var weather: Weather
 	var shake := 0.0
 
 
@@ -89,6 +90,7 @@ func _ready() -> void:
 		view.viewport = vp
 		view.camera = cam
 		view.hud = hud
+		view.weather = wx
 		views.append(view)
 
 	for i in views.size():
@@ -206,6 +208,8 @@ func _update_cameras(delta: float) -> void:
 		var half_h := 360.0 / ZOOM
 		ranges.append(Vector2(-(cam.position.y + half_h) , -(cam.position.y - half_h)))
 	world.road.set_view_ranges(ranges)
+	for v in views:
+		v.weather.set_haze(world.fog_at(v.player.d()))
 
 
 func _input(event: InputEvent) -> void:

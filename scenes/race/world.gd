@@ -35,6 +35,7 @@ var query: TrafficQuery
 var traffic: Traffic
 var collisions: Collisions
 var rules: RaceRules
+var fog: FogBanks             # drifting fog clouds, only on stages whose weather has them
 
 var _player_layer: Node2D
 
@@ -63,6 +64,10 @@ func setup(stage_data: StageData) -> void:
 	collisions = Collisions.new(self)
 	rules = RaceRules.new(self)
 	course.build()
+	if stage.weather.fog_banks > 0.0:
+		fog = FogBanks.new()
+		add_child(fog)
+		fog.setup(road, stage.weather, stage.rng_seed, 0.5 if Game.is_low_graphics() else 1.0)
 	if OS.is_debug_build():
 		var dbg := DebugBoxes.new()
 		dbg.world = self
@@ -95,6 +100,11 @@ func begin() -> void:
 		traffic.update_traffic(true)
 	for p in players:
 		AudioManager.engine_start(p.slot)
+
+
+## How deep in fog the road is at distance d: 0 = clear, 1 = the middle of a bank.
+func fog_at(d: float) -> float:
+	return fog.density_at(d) if fog != null else 0.0
 
 
 func wind_at(_d: float) -> float:
