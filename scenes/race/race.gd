@@ -3,6 +3,7 @@ extends Control
 
 const ZOOM := 0.75
 const CAM_LEAD := 240.0
+const HUD_SCENE := preload("res://scenes/race/hud.tscn")
 
 var world: World
 var views: Array = []          # {slot, player, viewport, camera, hud, shake}
@@ -67,7 +68,7 @@ func _ready() -> void:
 		wx.process_mode = Node.PROCESS_MODE_PAUSABLE   # rain and HUD freeze with the game behind the pause menu
 		vp.add_child(wx)
 		wx.setup(world.stage["weather"])
-		var hud := Hud.new()
+		var hud: Hud = HUD_SCENE.instantiate()
 		hud.process_mode = Node.PROCESS_MODE_PAUSABLE
 		hud.world = world
 		hud.stage_no = _stage_no
