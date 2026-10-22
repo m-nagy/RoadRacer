@@ -63,11 +63,11 @@ func _build_background() -> void:
 
 func _draw() -> void:
 	var sz := size
-	draw_rect(Rect2(Vector2.ZERO, sz), Color("2a3b5c"))
-	# Asphalt with scrolling lane dashes
-	var road_x := sz.x * 0.5 - 600.0
-	draw_rect(Rect2(road_x - 20, 0, 1240, sz.y), Color("d9d9d9"))
-	draw_rect(Rect2(road_x, 0, 1200, sz.y), Color("3d3f45"))
+	# Asphalt across the whole screen (whatever its shape) with scrolling lane dashes and an edge line
+	draw_rect(Rect2(Vector2.ZERO, sz), Color("3d3f45"))
+	draw_rect(Rect2(14, 0, 12, sz.y), Color("d9d9d9"))
+	draw_rect(Rect2(sz.x - 26, 0, 12, sz.y), Color("d9d9d9"))
+	var road_x := sz.x * 0.5 - 600.0   # the lane dashes and the cars stay centred
 	for lane in range(1, 5):
 		var x := road_x + lane * 225.0 - 112.0
 		var y := fposmod(_scroll, 120.0) - 120.0
@@ -80,7 +80,7 @@ func _draw() -> void:
 func _setup_menu() -> void:
 	var cont := SaveManager.continue_id()
 	var continue_button: Button = %Continue
-	continue_button.text = "Continue  -  %s: %s" % [Stages.label(cont).capitalize(), Stages.by_id(cont).name]
+	continue_button.text = "Continue  -  Stage %s: %s" % [Stages.short_label(cont), Stages.by_id(cont).name]
 	continue_button.pressed.connect(func(): _pick_stage(cont))
 	_menu_box.get_node("NewGame").pressed.connect(func(): _pick_stage(Stages.all()[0].id))
 	_menu_box.get_node("StageSelectButton").pressed.connect(func(): show_screen(Screen.STAGES))
@@ -148,6 +148,7 @@ func _input(event: InputEvent) -> void:
 
 func _process(delta: float) -> void:
 	_scroll += delta * 260.0
+	_bg_layer.position.x = (size.x - 1280.0) * 0.5   # the cars stay centred on a wider screen
 	for s in _bg_cars:
 		s.position.y -= s.get_meta("speed") * delta
 		if s.position.y < -150.0:
