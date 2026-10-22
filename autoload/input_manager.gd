@@ -246,8 +246,10 @@ func action_name(slot: int, action: String) -> String:
 	return "p%d_%s" % [slot, action]
 
 
+## Read live (not from the per-frame cache) so the physics tick, which can run several times per
+## rendered frame, always sees the current state.
 func pressed(slot: int, action: String) -> bool:
-	return _cur[slot].get(action, false)
+	return _raw_pressed(slot, action)
 
 
 func just_pressed(slot: int, action: String) -> bool:

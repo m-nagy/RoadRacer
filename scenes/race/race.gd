@@ -18,7 +18,7 @@ var _stage_no := 1
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
-	process_priority = 100
+	process_physics_priority = 100   # after World has ticked, so the cameras follow this tick's positions
 	theme = UiTheme.make()
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	_stage_no = Game.stage_index + 1
@@ -61,11 +61,14 @@ func _ready() -> void:
 			vp.world_2d = views[0]["viewport"].world_2d
 		var cam := Camera2D.new()
 		cam.zoom = Vector2(ZOOM, ZOOM)
+		cam.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS   # follows the physics-tick positions
 		vp.add_child(cam)
 		var wx := Weather.new()
+		wx.process_mode = Node.PROCESS_MODE_PAUSABLE   # rain and HUD freeze with the game behind the pause menu
 		vp.add_child(wx)
 		wx.setup(world.stage["weather"])
 		var hud := Hud.new()
+		hud.process_mode = Node.PROCESS_MODE_PAUSABLE
 		hud.world = world
 		hud.stage_no = _stage_no
 		hud.stage_name = world.stage["name"]
@@ -97,6 +100,8 @@ func _ready() -> void:
 	add_child(_label)
 
 	_update_cameras(0.0)
+	for v in views:
+		v["camera"].reset_physics_interpolation()
 	_run_countdown()
 
 
@@ -136,7 +141,7 @@ func _run_countdown() -> void:
 	_label.text = ""
 
 
-func _process(delta: float) -> void:
+func _physics_process(delta: float) -> void:
 	_update_cameras(delta)
 	if _ended or _menu != null:
 		return

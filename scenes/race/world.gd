@@ -360,8 +360,10 @@ func clear_area(d_from: float, d_to: float) -> void:
 
 # ------------------------------------------------------------ simulation
 
-func _process(delta: float) -> void:
-	var dt := minf(delta, 1.0 / 30.0)
+## The whole simulation runs on the fixed physics tick, so the game plays at the same speed at any
+## frame rate (a slow machine drops frames, not game time).
+func _physics_process(delta: float) -> void:
+	var dt := delta
 	for p in players:
 		p.tick(dt, running)
 	if not running:

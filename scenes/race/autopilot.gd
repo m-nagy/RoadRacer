@@ -35,7 +35,7 @@ func plan(p: PlayerCar, world: Node) -> Dictionary:
 		target_lane = cur
 	target_lane = clampi(target_lane, 0, n - 1)
 
-	# The full search is expensive; run it ~20 times a second and steer smoothly in between.
+	# The full search is expensive; run it every 3rd physics tick (20 times a second) and steer smoothly in between.
 	_replan -= 1
 	if _replan <= 0:
 		_replan = 3

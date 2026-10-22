@@ -70,6 +70,7 @@ func setup(kind_name: String, w: Node, lane: int, d: float, speed_mult: float) -
 		lane_speed = 2.6
 	if kind == "ambulance":
 		lane_speed = 2.2
+	reset_physics_interpolation()
 
 
 func d() -> float:
@@ -299,6 +300,7 @@ func place(at_d: float, lane: int) -> void:
 	target_lane = lane
 	position = Vector2(road.lane_x(at_d, lane), -at_d)
 	rotation = road.heading(at_d)
+	reset_physics_interpolation()
 
 
 ## Police only: chase this player (they knocked over a cone).

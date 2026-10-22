@@ -36,6 +36,8 @@ func setup(weather_kind: String) -> void:
 			_add(14, 5.0, Vector2(-0.4, 1.0), 90.0, _tex_dot, Color(0.85, 0.55, 0.15, 0.9), 1.6)
 		"wind":
 			_add(30, 0.9, Vector2(-1.0, 0.1), 900.0, _tex_streak, Color(1, 1, 1, 0.25), 1.0, true)
+	get_viewport().size_changed.connect(_layout)
+	_layout()
 
 
 func _make_tex(w: int, h: int) -> ImageTexture:
@@ -67,7 +69,8 @@ func _add(amount: int, life: float, dir: Vector2, speed: float, tex: Texture2D, 
 	_emitters.append(p)
 
 
-func _process(_delta: float) -> void:
+## Emitters sit just outside the viewport edge they start from; only a resize moves them.
+func _layout() -> void:
 	var vp := get_viewport().get_visible_rect().size
 	for e in _emitters:
 		if e.get_meta("horizontal"):

@@ -305,6 +305,7 @@ func _respawn() -> void:
 	speed = 0.0
 	_sprite.visible = true
 	queue_redraw()
+	reset_physics_interpolation()
 	world.clear_area(dd - 160.0, dd + 450.0)
 	world.on_player_respawn(self)
 
@@ -373,6 +374,7 @@ func teleport_to(new_d: float) -> void:
 	_last_d = new_d
 	invuln = 1.5
 	vx = 0.0
+	reset_physics_interpolation()
 
 
 func finish() -> void:
