@@ -41,6 +41,9 @@ var _pad_t := 0.0
 var _title_shown := false
 var shortcut_test := false
 var jump := 0.0
+var preview := false     # save the Stage Select picture of the stage (see _run_preview)
+var _preview_state := 0
+var _preview_t := 0.0
 var pause_at := -1.0
 var _jumped := false
 var force_crash := -1.0
@@ -84,6 +87,8 @@ func _ready() -> void:
 			gear = a.get_slice("=", 1)
 		elif a == "shortcut":
 			shortcut_test = true
+		elif a == "preview":
+			preview = true
 		elif a.begins_with("jump="):
 			jump = float(a.get_slice("=", 1))
 		elif a.begins_with("forcecrash="):
@@ -221,6 +226,9 @@ func _process(delta: float) -> void:
 		for p in world.players:
 			p.crashed.connect(_on_player_crashed.bind(p))
 	_t += delta
+	if preview:
+		_run_preview(world, scene, delta)
+		return
 	_sample_perf()
 	_sample_gpu()
 	if keydrive:
@@ -582,6 +590,40 @@ func _run_flow(scene: Node) -> void:
 		elif act == "say":
 			print("[flow] usable pads = ", InputManager.usable_pads(), " connected = ", Input.get_connected_joypads(), " tex=", load("res://assets/ui/panel_grey_dark.png"))
 			print("[flow] current scene = ", scene.name, "  screen=", scene.get("screen"), "  players active=", Game.active_slots(), " kb=", Game.players.map(func(p): return p.kb))
+
+
+## Stage Select picture: a frame of the road about a third of the way in (inside a fog bank on foggy
+## stages), without cars or HUD, scaled down and saved to assets/previews/<id>.webp. Run for every stage
+## with tools/make_previews.sh (needs a window: it does not work with --headless).
+func _run_preview(world: World, scene: Node, delta: float) -> void:
+	var p: PlayerCar = world.players[0]
+	for r in world.rivals:
+		r.visible = false
+	if _preview_state == 0:
+		_preview_state = 1
+		var at := world.road.length * 0.35
+		if world.fog != null and world.fog.sample_d() > 0.0:
+			at = world.fog.sample_d()
+		p.teleport_to(at)
+		p.speed = 0.0
+		scene.views[0].hud.visible = false
+		scene._label.visible = false
+		Input.action_release("p0_fast")
+		Input.action_release("p0_slow")
+		return
+	p.get_node("Sprite").modulate.a = 0.0   # no car in the picture; the headlights stay on, they light the road at night
+	p.speed = 0.0
+	_preview_t += delta
+	if _preview_t < 2.5:
+		return
+	var img := get_viewport().get_texture().get_image()
+	img.resize(384, 216, Image.INTERPOLATE_LANCZOS)
+	var dir := ProjectSettings.globalize_path("res://assets/previews/")
+	DirAccess.make_dir_recursive_absolute(dir)
+	var path := dir + stage_id + ".webp"
+	img.save_webp(path, true, 0.85)
+	print("[autotest] preview ", path)
+	get_tree().quit()
 
 
 func _kd(which: String, down: bool) -> void:

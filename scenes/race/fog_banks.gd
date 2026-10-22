@@ -71,6 +71,11 @@ func _make_texture(rng_seed: int) -> ImageTexture:
 	return ImageTexture.create_from_image(img)
 
 
+## A distance inside the first bank (for the Stage Select picture); -1 when there are no banks.
+func sample_d() -> float:
+	return _banks[0].d0 + (_banks[0].d1 - _banks[0].d0) * 0.3 if not _banks.is_empty() else -1.0
+
+
 ## 0 (clear) to 1 (middle of a bank) at distance d along the road.
 func density_at(d: float) -> float:
 	for b in _banks:

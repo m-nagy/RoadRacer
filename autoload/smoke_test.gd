@@ -1,12 +1,12 @@
 extends Node
 ## Start-up check for the build pipeline (works in release builds):
 ##   RoadRacer.exe --headless -- --smoke-test
-## plays a short race on a night + storm stage with two players, then prints "SMOKE OK" and quits
+## checks that every stage has its Stage Select picture, plays a short race on a night + storm stage with two players, then prints "SMOKE OK" and quits
 ## (or "SMOKE FAIL ..." and exits with code 1). It saves nothing. Without the argument this node
 ## removes itself immediately. Adding --expect-release makes it fail when the exe is a debug build.
 ## Autoload order: last; uses Game, SaveManager and InputManager.
 
-const STAGE := "storm_desert"
+const STAGE := "desert_3"      # night + storm
 const SECONDS := 14.0       # real time: the countdown takes 4 s, the rest is racing
 const MIN_DISTANCE := 400.0
 
@@ -21,6 +21,11 @@ func _ready() -> void:
 		print("SMOKE FAIL: this is a debug build")
 		get_tree().quit(1)
 		return
+	for st in Stages.all():   # every stage needs its Stage Select picture (tools/make_previews.sh)
+		if not ResourceLoader.exists(StageCard.preview_path(st.id)):
+			print("SMOKE FAIL: no Stage Select picture for ", st.id)
+			get_tree().quit(1)
+			return
 	SaveManager.save_path = "user://smoke/save.json"
 	Game.prefs_applied = true
 	for i in GameConst.MAX_PLAYERS:
