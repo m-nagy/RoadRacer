@@ -24,7 +24,7 @@ var _ended := false
 var _clock := 0.0
 var _first_finish := -1.0
 var _all_out := -1.0
-var _stage_no := 1
+var _stage_id := ""
 
 
 func _ready() -> void:
@@ -32,7 +32,7 @@ func _ready() -> void:
 	process_physics_priority = 100   # after World has ticked, so the cameras follow this tick's positions
 	theme = UiTheme.make()
 	set_anchors_preset(Control.PRESET_FULL_RECT)
-	_stage_no = Game.stage_index + 1
+	_stage_id = Game.stage_id
 
 	var slots: Array = Game.active_slots()
 	if slots.is_empty():
@@ -67,7 +67,7 @@ func _ready() -> void:
 			world = World.new()
 			world.process_mode = Node.PROCESS_MODE_PAUSABLE
 			vp.add_child(world)
-			world.setup(Game.stage_index)
+			world.setup(Stages.by_id(_stage_id))
 		else:
 			vp.world_2d = views[0].viewport.world_2d
 		var cam := Camera2D.new()
@@ -81,7 +81,7 @@ func _ready() -> void:
 		var hud: Hud = HUD_SCENE.instantiate()
 		hud.process_mode = Node.PROCESS_MODE_PAUSABLE
 		hud.world = world
-		hud.stage_no = _stage_no
+		hud.stage_label = Stages.label(_stage_id)
 		hud.stage_name = world.stage.name
 		wrap.add_child(hud)
 		var view := View.new()
@@ -143,7 +143,7 @@ func _on_shake(slot: int, strength: float) -> void:
 
 func _run_countdown() -> void:
 	_label.add_theme_font_size_override("font_size", 56)
-	_label.text = "STAGE %d\n%s" % [_stage_no, world.stage.name.to_upper()]
+	_label.text = "%s\n%s" % [Stages.label(_stage_id), world.stage.name.to_upper()]
 	await get_tree().create_timer(2.0).timeout
 	_label.add_theme_font_size_override("font_size", 150)
 	for s in ["3", "2", "1"]:
@@ -242,7 +242,7 @@ func open_pause() -> void:
 	AudioManager.engines_stop_all()
 	_show_menu("pause", "PAUSED", [], [
 		["Resume", _close_menu],
-		["Restart Stage", func(): Game.go_to_race(Game.stage_index)],
+		["Restart Stage", func(): Game.go_to_race(_stage_id)],
 		["Full Screen On / Off", func(): Game.set_fullscreen(not Game.is_fullscreen())],
 		["Quit to Title", Game.go_to_title],
 	])
@@ -318,17 +318,18 @@ func _end_clear() -> void:
 				time_left = p.time_left
 		else:
 			lines.append("%s: did not finish  (%d pts)" % [tag, int(p.score)])
-	is_best = SaveManager.record_clear(_stage_no, best_score, time_left)
+	is_best = SaveManager.record_clear(_stage_id, best_score, time_left)
 	SaveManager.store_prefs(Game.players)
 	if is_best:
 		lines.append("NEW BEST!")
 	AudioManager.play("goal")
 	var buttons := []
-	if _stage_no < Game.STAGE_COUNT:
-		buttons.append(["Next Stage", func(): Game.go_to_race(Game.stage_index + 1)])
-	buttons.append(["Replay Stage", func(): Game.go_to_race(Game.stage_index)])
+	var next := Stages.next_id(_stage_id)
+	if next != "" and SaveManager.is_unlocked(next):
+		buttons.append(["Next Stage", func(): Game.go_to_race(next)])
+	buttons.append(["Replay Stage", func(): Game.go_to_race(_stage_id)])
 	buttons.append(["Title", Game.go_to_title])
-	var title := "STAGE CLEAR!" if _stage_no < Game.STAGE_COUNT else "ALL STAGES CLEAR!"
+	var title := "ALL STAGES CLEAR!" if next == "" and not Stages.is_challenge(_stage_id) else "STAGE CLEAR!"
 	_show_menu("clear", title, lines, buttons)
 
 
@@ -344,7 +345,7 @@ func _end_fail() -> void:
 		var tag := "P%d" % (v.slot + 1) if views.size() > 1 else "Score"
 		lines.append("%s: %d pts" % [tag, int(p.score)])
 	_show_menu("fail", "OUT OF FUEL", lines, [
-		["Retry Stage", func(): Game.go_to_race(Game.stage_index)],
-		["New Game", func(): Game.go_to_race(0)],
+		["Retry Stage", func(): Game.go_to_race(_stage_id)],
+		["New Game", func(): Game.go_to_race(Stages.CAMPAIGN[0].id)],
 		["Title", Game.go_to_title],
 	])

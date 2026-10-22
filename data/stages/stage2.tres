@@ -49,6 +49,8 @@ weights = Array[float]([3.0, 2.0, 3.0, 1.0, 1.0])
 [resource]
 script = ExtResource("4_lyoij")
 name = "Countryside"
+id = "country"
+rng_seed = 15851
 theme = "country"
 weather = "leaves"
 length = 80000.0

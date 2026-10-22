@@ -6,14 +6,13 @@ const MAX_PLAYERS := GameConst.MAX_PLAYERS
 
 const COLORS := GameConst.COLORS
 
-const STAGE_COUNT := GameConst.STAGE_COUNT
 
 ## One entry per slot (see PlayerSlot).
 var players: Array[PlayerSlot] = []
-var stage_index := 0  # 0-based
+var stage_id := "city"   # the stage being raced (see Stages)
 var shader: Shader = preload("res://shaders/car_color.gdshader")
 var prefs_applied := false
-var pending_stage := 0     # stage chosen on the home screen, started after players + cars are picked
+var pending_stage_id := "" # stage chosen on the home screen, started after players + cars are picked
 var debug_boxes := false   # F3: show collision boxes
 
 
@@ -50,8 +49,8 @@ func make_car_material(color_idx: int) -> ShaderMaterial:
 	return m
 
 
-func go_to_race(stage: int) -> void:
-	stage_index = clampi(stage, 0, STAGE_COUNT - 1)
+func go_to_race(id: String) -> void:
+	stage_id = Stages.by_id(id).id
 	get_tree().paused = false
 	get_tree().change_scene_to_file("res://scenes/race/race.tscn")
 

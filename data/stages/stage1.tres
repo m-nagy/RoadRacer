@@ -39,6 +39,8 @@ weights = Array[float]([4.0, 3.0, 1.0, 1.0])
 [resource]
 script = ExtResource("4_ivf0u")
 name = "City Centre"
+id = "city"
+rng_seed = 7932
 lanes = Array[ExtResource("2_2euu0")]([SubResource("Resource_ntlvh")])
 curve = Array[ExtResource("1_5sa5g")]([SubResource("Resource_kcxmc"), SubResource("Resource_oah3i")])
 ground = Color(0.41960785, 0.44705883, 0.5019608, 1)

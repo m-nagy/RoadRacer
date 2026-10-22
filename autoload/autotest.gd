@@ -5,7 +5,7 @@ extends Node
 ## Drives the real game with the AutoPilot, prints stats and saves screenshots to user://autotest/.
 
 var enabled := false
-var stage := 0
+var stage_id := "city"
 var players := 1
 var easy := true
 var seconds := 60.0
@@ -55,7 +55,8 @@ func _ready() -> void:
 		if a == "--autotest":
 			enabled = true
 		elif a.begins_with("stage="):
-			stage = int(a.get_slice("=", 1)) - 1
+			var v := a.get_slice("=", 1)
+			stage_id = Stages.CAMPAIGN[clampi(int(v) - 1, 0, Stages.CAMPAIGN.size() - 1)].id if v.is_valid_int() else v
 		elif a.begins_with("players="):
 			players = int(a.get_slice("=", 1))
 		elif a.begins_with("easy="):
@@ -141,9 +142,9 @@ func _begin() -> void:
 		_started = true
 		get_tree().change_scene_to_file("res://scenes/title/title.tscn")
 		return
-	Game.go_to_race(stage)
+	Game.go_to_race(stage_id)
 	_started = true
-	print("[autotest] stage=%d players=%d easy=%s gear=%s seconds=%.0f tracks=%d impacts=%s -> %s" % [stage + 1, players, easy, gear, seconds, AudioManager.track_count(), str(AudioManager.impact_families()), ProjectSettings.globalize_path("user://autotest")])
+	print("[autotest] stage=%d players=%d easy=%s gear=%s seconds=%.0f tracks=%d impacts=%s -> %s" % [Stages.index_of(stage_id) + 1, players, easy, gear, seconds, AudioManager.track_count(), str(AudioManager.impact_families()), ProjectSettings.globalize_path("user://autotest")])
 
 
 func _process(delta: float) -> void:
@@ -272,7 +273,7 @@ func _process(delta: float) -> void:
 		if _t >= s and not _shot_done.has(s):
 			_shot_done[s] = true
 			var img := get_viewport().get_texture().get_image()
-			var path := "user://autotest/s%d_p%d_%03d.png" % [stage + 1, players, int(s * 10)]
+			var path := "user://autotest/s%s_p%d_%03d.png" % [Stages.index_of(stage_id) + 1 if not Stages.is_challenge(stage_id) else stage_id, players, int(s * 10)]
 			img.save_png(path)
 			print("[autotest] screenshot ", ProjectSettings.globalize_path(path))
 	_audit_rivals(world)

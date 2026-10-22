@@ -56,6 +56,8 @@ weights = Array[float]([2.0, 3.0, 3.0, 1.0, 2.0, 1.0])
 [resource]
 script = ExtResource("4_xf50q")
 name = "Desert Run"
+id = "desert"
+rng_seed = 31689
 theme = "desert"
 weather = "sand"
 length = 100000.0

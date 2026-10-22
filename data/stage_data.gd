@@ -3,7 +3,10 @@ extends Resource
 ## Everything that makes one stage what it is. Distances are in pixels (8 px = 1 displayed metre).
 ## v_slow / v_fast: measured average speed (px/s) of a clean run in slow / fast gear (see Difficulty).
 
+@export var id := ""             # unique, used in the save file and to pick the stage
 @export var name := ""
+@export var rng_seed := 0        # fixes the course (obstacles, fuel cans, scenery) of this stage
+@export var requires := ""       # id of the stage that must be cleared first (challenges); empty = by list order
 @export_enum("city", "country", "bridge", "desert", "snow", "night") var theme := "city"
 @export_enum("none", "rain", "snow", "sand", "leaves", "wind") var weather := "none"
 @export var night := false

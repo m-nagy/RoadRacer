@@ -54,6 +54,8 @@ weights = Array[float]([2.0, 2.0, 2.0, 2.0, 1.0, 1.0])
 [resource]
 script = ExtResource("4_knrh2")
 name = "Seaside Bridge"
+id = "bridge"
+rng_seed = 23770
 theme = "bridge"
 weather = "wind"
 length = 90000.0

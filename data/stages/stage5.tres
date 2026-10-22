@@ -59,6 +59,8 @@ weights = Array[float]([2.0, 2.0, 3.0, 3.0, 3.0, 1.0])
 [resource]
 script = ExtResource("4_033ch")
 name = "Snowy Mountains"
+id = "snow"
+rng_seed = 39608
 theme = "snow"
 weather = "snow"
 length = 110000.0

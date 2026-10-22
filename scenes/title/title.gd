@@ -137,9 +137,9 @@ func _menu_button(box: Control, text: String, cb: Callable) -> Button:
 
 func _build_menu() -> void:
 	_menu_box = _centered_box("MenuBox")
-	var cont: int = SaveManager.unlocked
-	_menu_button(_menu_box, "Continue  -  Stage %d: %s" % [cont, Stages.get_stage(cont - 1).name], func(): _pick_stage(cont - 1)).name = "Continue"
-	_menu_button(_menu_box, "New Game  -  from Stage 1", func(): _pick_stage(0))
+	var cont := SaveManager.continue_id()
+	_menu_button(_menu_box, "Continue  -  %s: %s" % [Stages.label(cont).capitalize(), Stages.by_id(cont).name], func(): _pick_stage(cont)).name = "Continue"
+	_menu_button(_menu_box, "New Game  -  from Stage 1", func(): _pick_stage(Stages.CAMPAIGN[0].id))
 	_menu_button(_menu_box, "Stage Select", func(): show_screen(Screen.STAGES))
 	_menu_button(_menu_box, "Options", func(): show_screen(Screen.OPTIONS))
 	var fs := _menu_button(_menu_box, "", func(): pass)
@@ -168,17 +168,17 @@ func _build_stages() -> void:
 	grid.add_theme_constant_override("h_separation", 16)
 	grid.add_theme_constant_override("v_separation", 16)
 	v.add_child(grid)
-	for i in Game.STAGE_COUNT:
-		var st := Stages.get_stage(i)
-		var unlocked: bool = i < SaveManager.unlocked
-		var best := SaveManager.best_score(i + 1)
+	for i in Stages.CAMPAIGN.size():
+		var st := Stages.CAMPAIGN[i]
+		var unlocked := SaveManager.is_unlocked(st.id)
+		var best := SaveManager.best_score(st.id)
 		var b := Button.new()
 		b.text = "%d. %s\n%s" % [i + 1, st.name, ("Best: %d" % best) if unlocked and best > 0 else ("" if unlocked else "Locked")]
 		b.custom_minimum_size = Vector2(360, 120)
 		b.disabled = not unlocked
 		b.add_theme_font_size_override("font_size", 26)
-		var idx := i
-		b.pressed.connect(func(): _pick_stage(idx))
+		var picked := st.id
+		b.pressed.connect(func(): _pick_stage(picked))
 		grid.add_child(b)
 	var back := Button.new()
 	back.text = "Back"
@@ -227,15 +227,15 @@ func show_screen(s: Screen) -> void:
 			options_screen.open()
 
 
-func _pick_stage(stage: int) -> void:
-	Game.pending_stage = stage
+func _pick_stage(id: String) -> void:
+	Game.pending_stage_id = id
 	show_screen(Screen.PLAYERS)
 
 
 func _start_race() -> void:
 	SaveManager.store_prefs(Game.players)
 	AudioManager.play("go", -6.0)
-	Game.go_to_race(Game.pending_stage)
+	Game.go_to_race(Game.pending_stage_id)
 
 
 func _input(event: InputEvent) -> void:

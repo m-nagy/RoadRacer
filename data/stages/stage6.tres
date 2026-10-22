@@ -62,6 +62,8 @@ weights = Array[float]([2.0, 1.0, 2.0, 4.0, 3.0, 2.0, 2.0])
 [resource]
 script = ExtResource("4_tvnbb")
 name = "Rainy Night City"
+id = "night_city"
+rng_seed = 47527
 theme = "night"
 weather = "rain"
 night = true

@@ -3,7 +3,6 @@ class_name GameConst
 ## every autoload can use them without depending on another autoload.
 
 const MAX_PLAYERS := 2
-const STAGE_COUNT := 6
 
 ## Hue shifts are relative to the red base sprite (Audi.png).
 const COLORS := [

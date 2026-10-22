@@ -36,12 +36,12 @@ var rules: RaceRules
 var _player_layer: Node2D
 
 
-func setup(stage_index: int) -> void:
-	stage = Stages.get_stage(stage_index)
+func setup(stage_data: StageData) -> void:
+	stage = stage_data
 	level_name = SaveManager.difficulty
 	level = Difficulty.level(level_name)
 	cp_bonus = Difficulty.checkpoint_bonus(stage, level)
-	rng.seed = 7919 * (stage_index + 1) + 13
+	rng.seed = stage.rng_seed
 	seed(rng.seed)   # the global RNG (rivals, shuffles) repeats too, so a run can be replayed exactly
 	road = Road.new()
 	add_child(road)

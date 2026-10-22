@@ -10,7 +10,7 @@ const POPUP_LIFE := 2.0
 var player: PlayerCar
 var world: World
 var stage_name := ""
-var stage_no := 1
+var stage_label := "STAGE 1"
 var all_players: Array = []
 
 var _blink := 0.0
@@ -33,7 +33,7 @@ var _time_low := false
 
 
 func _ready() -> void:
-	_stage_label.text = "STAGE %d  -  %s" % [stage_no, String(world.level_name).to_upper()]
+	_stage_label.text = "%s  -  %s" % [stage_label, String(world.level_name).to_upper()]
 
 
 func add_popup(text: String, kind: String) -> void:
