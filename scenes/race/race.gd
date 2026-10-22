@@ -105,6 +105,7 @@ func _ready() -> void:
 	world.shake.connect(_on_shake)
 	world.shortcut_taken.connect(func(slot): _hud_for(slot).fade())
 	world.begin()
+	AudioManager.prepare_music()
 
 	_label = Label.new()
 	_label.set_anchors_preset(Control.PRESET_FULL_RECT)

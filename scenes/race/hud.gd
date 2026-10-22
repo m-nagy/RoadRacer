@@ -37,21 +37,27 @@ func _ready() -> void:
 
 
 func add_popup(text: String, kind: String) -> void:
+	# Each message sits in a fixed-height row (so the rows stack evenly) and floats up inside it.
+	var row := Control.new()
+	row.custom_minimum_size = Vector2(0, 44)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var l := Label.new()
 	l.text = text
+	l.set_anchors_preset(Control.PRESET_TOP_WIDE)
 	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	l.add_theme_font_size_override("font_size", 36)
 	l.add_theme_constant_override("outline_size", 8)
 	l.add_theme_color_override("font_outline_color", Color(0.08, 0.05, 0.03))
 	l.add_theme_color_override("font_color", Color("ffe36e") if kind == "good" else Color("ff6a5a"))
-	_popups.add_child(l)
+	row.add_child(l)
+	_popups.add_child(row)
 	if _popups.get_child_count() > POPUP_MAX:
 		_popups.get_child(0).queue_free()
-	var tw := l.create_tween()
-	tw.tween_interval(POPUP_LIFE - 1.0)
-	tw.tween_property(l, "modulate:a", 0.0, 1.0)
-	tw.tween_callback(l.queue_free)
+	var tw := row.create_tween().set_parallel()
+	tw.tween_property(l, "position:y", -28.0, POPUP_LIFE)
+	tw.tween_property(l, "modulate:a", 0.0, 1.0).set_delay(POPUP_LIFE - 1.0)
+	tw.chain().tween_callback(row.queue_free)
 
 
 ## White flash that fades out (used when a shortcut is taken).

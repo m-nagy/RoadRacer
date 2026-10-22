@@ -145,6 +145,11 @@ pressed. A red label and brake lights tell you why the car is slowing down. F3 s
 | `assets/` | Car sprites, UI graphics, music and sound effects used by the game |
 | `art/` | Source of the game icon (`icon.svg`; ignored by Godot) |
 
+## Design notes
+- **Input** (`autoload/input_manager.gd`) is read directly instead of through InputMap: that is what makes the stuck-button
+  and mirrored-gamepad filters, and per-player remapping, possible. The menus still use the normal `ui_*` actions.
+- **Simulation** runs on the fixed physics tick (`World._physics_process`), so the game plays at the same speed at any frame rate.
+
 ## Developer bot
 `godot --path . -- --autotest stage=4 players=2 easy=1 gear=fast seconds=60 shots=5,20 scale=2` drives the real game with the
 autopilot, prints crashes/progress and saves screenshots to `user://autotest/`. Run it headless and faster than real time

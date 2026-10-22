@@ -9,7 +9,8 @@ var _music: AudioStreamPlayer
 var _pool: Array[AudioStreamPlayer] = []
 var _engines: Dictionary = {}
 var _track_names: Array = []
-var _impacts: Dictionary = {}
+var _impacts: Dictionary = {}   # family ("impactMetal") -> Array[AudioStream], loaded once at start-up
+var _prepared_track := ""      # track picked and loading in the background (see prepare_music)
 const MUSIC_BASE_DB := -8.0
 const SIREN_RANGE := 1400.0
 
@@ -43,7 +44,7 @@ func _ready() -> void:
 		var key: String = f.get_basename().get_slice("_", 0)
 		if not _impacts.has(key):
 			_impacts[key] = []
-		_impacts[key].append(f)
+		_impacts[key].append(load(IMPACT_DIR + f))   # loaded now, not in the middle of a crash
 
 
 ## Applies the saved music / effects volume sliders.
@@ -56,22 +57,35 @@ func apply_volumes() -> void:
 		_engines[k].volume_db = -22.0 + sfx_db
 
 
+## Resource files in a folder with this extension, by their original names (works in exports too).
 func _list(dir: String, ext: String) -> Array:
 	var out := []
-	# Exported builds list .ogg files as ".ogg.import"; strip that suffix.
-	for f in DirAccess.get_files_at(dir):
-		var n := f.trim_suffix(".import")
-		if n.ends_with(ext) and not out.has(n):
-			out.append(n)
+	for f in ResourceLoader.list_directory(dir):
+		if f.ends_with(ext):
+			out.append(f)
 	out.sort()
 	return out
+
+
+## Picks this race's music track and starts loading it in the background, so play_music() at the
+## green light does not stall the game.
+func prepare_music() -> void:
+	if _track_names.is_empty():
+		return
+	_prepared_track = _track_names[randi() % _track_names.size()]
+	ResourceLoader.load_threaded_request(MUSIC_DIR + _prepared_track)
 
 
 func play_music(track: int = -1) -> void:
 	if _track_names.is_empty():
 		return
-	var pick: String = _track_names[randi() % _track_names.size()] if track < 0 else _track_names[track % _track_names.size()]
-	var stream: AudioStream = load(MUSIC_DIR + pick)
+	var stream: AudioStream
+	if track < 0 and _prepared_track != "":
+		stream = ResourceLoader.load_threaded_get(MUSIC_DIR + _prepared_track)
+		_prepared_track = ""
+	else:
+		var pick: String = _track_names[randi() % _track_names.size()] if track < 0 else _track_names[track % _track_names.size()]
+		stream = load(MUSIC_DIR + pick)
 	if stream is AudioStreamOggVorbis:
 		stream.loop = true
 	_music.stream = stream
@@ -135,8 +149,8 @@ func play(sfx_name: String, volume_db := 0.0, pitch := 1.0) -> void:
 func play_impact(family: String, volume_db := 0.0) -> void:
 	if not _impacts.has(family):
 		return
-	var f: String = _impacts[family].pick_random()
-	_play_stream(load(IMPACT_DIR + f), volume_db + sfx_db, randf_range(0.92, 1.08))
+	var stream: AudioStream = _impacts[family].pick_random()
+	_play_stream(stream, volume_db + sfx_db, randf_range(0.92, 1.08))
 
 
 func _play_stream(stream: AudioStream, volume_db: float, pitch: float) -> void:

@@ -146,7 +146,7 @@ func tick(dt: float, running: bool) -> void:
 			position.y -= speed * dt
 			# Roll on following the lane.
 			position.x = move_toward(position.x, road.lane_x(d(), road.nearest_lane(d(), position.x)), 240.0 * dt)
-			rotation = lerp_angle(rotation, road.heading(d()), 0.2)
+			rotation = lerp_angle(rotation, road.heading(d()), 1.0 - exp(-13.4 * dt))   # (same pace as 0.2 per tick at 60 Hz)
 			_sprite.rotation = 0.0
 			return
 
@@ -232,7 +232,7 @@ func tick(dt: float, running: bool) -> void:
 	if skid > 0.0 or oil_skid > 0.0:
 		_wobble += dt * 22.0
 		wob = sin(_wobble) * 0.3
-	_sprite.rotation = lerpf(_sprite.rotation, wob, 0.3)
+	_sprite.rotation = lerpf(_sprite.rotation, wob, 1.0 - exp(-21.4 * dt))
 	_sprite.visible = invuln <= 0.0 or int(invuln * 12.0) % 2 == 0
 
 	# --- road side: any corner of the body past the curb is a crash

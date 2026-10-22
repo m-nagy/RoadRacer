@@ -8,6 +8,11 @@ extends Node
 ## Button state is evaluated here every frame (before anything else) instead of through InputMap,
 ## so buttons that were already held when a pad connected or a screen opened can be ignored until
 ## they are released ("stuck input" filter).
+##
+## Why not plain InputMap actions? InputMap cannot (a) ignore a button that was already down, (b) drop
+## the second copy of a press that a virtual pad (DS4Windows) sends, or (c) give each of two players
+## their own remappable keys + pad on one screen. The menus still use InputMap for ui_accept / ui_cancel
+## / ui_left...; this code only owns in-race and per-player input.
 
 const ACTIONS := ControlDefaults.ACTIONS
 const ACTION_NAMES := ControlDefaults.ACTION_NAMES
