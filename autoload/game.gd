@@ -17,9 +17,8 @@ const COLORS := [
 
 const STAGE_COUNT := 6
 
-## One entry per slot: active, device (joypad id or -1), kb (plays on the keyboard), color,
-## easy (= auto-steer mode), ready.
-var players: Array = []
+## One entry per slot (see PlayerSlot).
+var players: Array[PlayerSlot] = []
 var stage_index := 0  # 0-based
 var shader: Shader = preload("res://shaders/car_color.gdshader")
 var prefs_applied := false
@@ -34,13 +33,15 @@ func _ready() -> void:
 func reset_players() -> void:
 	players.clear()
 	for i in MAX_PLAYERS:
-		players.append({"active": false, "device": -1, "kb": false, "color": i * 4, "easy": false, "ready": false})
+		var slot := PlayerSlot.new()
+		slot.color = i * 4
+		players.append(slot)
 
 
 func active_slots() -> Array:
 	var out := []
 	for i in players.size():
-		if players[i]["active"]:
+		if players[i].active:
 			out.append(i)
 	return out
 

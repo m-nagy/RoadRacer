@@ -113,17 +113,17 @@ func _continue() -> void:
 		return
 	for slot in 2:
 		var d := _slot_device(-1 if slot == 0 else 1)
-		var p: Dictionary = Game.players[slot]
-		p["ready"] = false
+		var p: PlayerSlot = Game.players[slot]
+		p.ready = false
 		if d.is_empty():
-			p["active"] = false
-			p["device"] = -1
-			p["kb"] = false
+			p.active = false
+			p.device = -1
+			p.kb = false
 			InputManager.rebuild(slot)
 			continue
-		p["active"] = true
-		p["color"] = SaveManager.prefs[slot]["color"]
-		p["easy"] = SaveManager.prefs[slot]["easy"]
+		p.active = true
+		p.color = SaveManager.prefs[slot]["color"]
+		p.easy = SaveManager.prefs[slot]["easy"]
 		if d["kind"] == "kb":
 			InputManager.assign_keyboard(slot)
 		else:

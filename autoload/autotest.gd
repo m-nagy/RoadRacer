@@ -121,17 +121,17 @@ func _ready() -> void:
 func _begin() -> void:
 	Game.reset_players()
 	for i in players:
-		Game.players[i]["active"] = true
-		Game.players[i]["easy"] = easy
-		Game.players[i]["color"] = [0, 4][i]
-		Game.players[i]["ready"] = true
+		Game.players[i].active = true
+		Game.players[i].easy = easy
+		Game.players[i].color = [0, 4][i]
+		Game.players[i].ready = true
 		InputManager.assign_keyboard(i)
 	Game.prefs_applied = true
 	if diff != "":
 		SaveManager.difficulty = diff
 	if title_mode:
 		for i in players:
-			Game.players[i]["ready"] = false
+			Game.players[i].ready = false
 		if players == 2 and OS.get_cmdline_user_args().has("padp2"):
 			InputManager.assign_pad(1, 0)  # show what a gamepad player's card looks like
 		_started = true
@@ -470,7 +470,7 @@ func _run_flow(scene: Node) -> void:
 			var fo := get_viewport().gui_get_focus_owner()
 			print("[flow] focus = ", str(fo.get("text")).get_slice("  ", 0) if fo else "<none>", "  mirrors=", InputManager._mirror.keys())
 		elif act == "color":
-			print("[flow] screen=%s P1 color=%s (%s) easy=%s" % [scene.get("screen"), str(Game.players[0]["color"]), Game.COLORS[int(Game.players[0]["color"])]["name"], Game.players[0]["easy"]])
+			print("[flow] screen=%s P1 color=%s (%s) easy=%s" % [scene.get("screen"), str(Game.players[0].color), Game.COLORS[Game.players[0].color]["name"], Game.players[0].easy])
 		elif act.begins_with("call:"):
 			var o: OptionsScreen = scene._options
 			match act.get_slice(":", 1):
@@ -491,7 +491,7 @@ func _run_flow(scene: Node) -> void:
 			_shot(act.get_slice(":", 1))
 		elif act == "say":
 			print("[flow] usable pads = ", InputManager.usable_pads(), " connected = ", Input.get_connected_joypads(), " tex=", load("res://assets/ui/panel_grey_dark.png"))
-			print("[flow] current scene = ", scene.name, "  screen=", scene.get("screen"), "  players active=", Game.active_slots(), " kb=", Game.players.map(func(p): return p["kb"]))
+			print("[flow] current scene = ", scene.name, "  screen=", scene.get("screen"), "  players active=", Game.active_slots(), " kb=", Game.players.map(func(p): return p.kb))
 
 
 func _kd(which: String, down: bool) -> void:

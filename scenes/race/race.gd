@@ -36,7 +36,7 @@ func _ready() -> void:
 
 	var slots: Array = Game.active_slots()
 	if slots.is_empty():
-		Game.players[0]["active"] = true
+		Game.players[0].active = true
 		InputManager.assign_keyboard(0)
 		slots = [0]
 
@@ -93,9 +93,9 @@ func _ready() -> void:
 
 	for i in views.size():
 		var v := views[i]
-		var cfg: Dictionary = Game.players[v.slot]
+		var cfg: PlayerSlot = Game.players[v.slot]
 		var lane := 1 if views.size() == 1 else 1 + i
-		v.player = world.add_player(v.slot, cfg["color"], cfg["easy"], lane)
+		v.player = world.add_player(v.slot, cfg.color, cfg.easy, lane)
 	var all_players: Array = views.map(func(v): return v.player)
 	for v in views:
 		v.hud.player = v.player
@@ -221,7 +221,7 @@ func _input(event: InputEvent) -> void:
 			toggle = true
 		else:
 			for v in views:
-				if Game.players[v.slot]["kb"] and InputManager.profile(v.slot)["kb"]["pause"] == k:
+				if Game.players[v.slot].kb and InputManager.profile(v.slot)["kb"]["pause"] == k:
 					toggle = true
 	elif _menu != null and _menu_kind == "pause" and event.is_action_pressed("ui_cancel"):
 		toggle = true   # B on a gamepad closes the pause menu too

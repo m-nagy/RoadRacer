@@ -120,8 +120,8 @@ func _on_joy_changed(device: int, connected: bool) -> void:
 	else:
 		_blocked.erase(device)
 		for slot in Game.MAX_PLAYERS:
-			if Game.players[slot]["device"] == device:
-				Game.players[slot]["device"] = -1
+			if Game.players[slot].device == device:
+				Game.players[slot].device = -1
 				rebuild(slot)
 	pad_connection_changed.emit()
 
@@ -224,14 +224,14 @@ func _raw_pressed(slot: int, action: String) -> bool:
 
 ## 0..1 strength of an action from the player's keyboard keys or gamepad.
 func _strength(slot: int, action: String) -> float:
-	var p: Dictionary = Game.players[slot]
+	var p: PlayerSlot = Game.players[slot]
 	var prof: Dictionary = profile(slot)
 	var best := 0.0
-	if p.get("kb", false):
+	if p.kb:
 		var key: int = prof["kb"].get(action, 0)
 		if key != 0 and Input.is_physical_key_pressed(key):
 			best = 1.0
-	var dev: int = p["device"]
+	var dev: int = p.device
 	if dev >= 0:
 		for ev in prof["pad"].get(action, []):
 			if ev["t"] == "b":
@@ -270,14 +270,14 @@ func steer(slot: int) -> float:
 # ------------------------------------------------------------ assignment & profiles
 
 func assign_pad(slot: int, device: int) -> void:
-	Game.players[slot]["device"] = device
-	Game.players[slot]["kb"] = false
+	Game.players[slot].device = device
+	Game.players[slot].kb = false
 	rebuild(slot)
 
 
 func assign_keyboard(slot: int) -> void:
-	Game.players[slot]["device"] = -1
-	Game.players[slot]["kb"] = true
+	Game.players[slot].device = -1
+	Game.players[slot].kb = true
 	rebuild(slot)
 
 
@@ -303,8 +303,8 @@ func rebuild(slot: int) -> void:
 ## Short on-screen label for an action of a player: a key name ("G", "Left"...) or pad button.
 ## Arrow keys return "left"/"right"/"up"/"down" so they can be drawn as arrows.
 func label(slot: int, action: String) -> String:
-	var p: Dictionary = Game.players[slot]
-	if p.get("kb", false):
+	var p: PlayerSlot = Game.players[slot]
+	if p.kb:
 		return key_label(profile(slot)["kb"].get(action, 0))
 	var evs: Array = profile(slot)["pad"].get(action, [])
 	return pad_label(evs[0] if not evs.is_empty() else {})

@@ -65,7 +65,7 @@ func _draw_course(player: PlayerCar, w: float, h: float) -> void:
 	var top := 130.0
 	var bot := h - 120.0
 	var bx := w - 24.0
-	var pcol := Game.swatch(Game.players[player.slot]["color"])
+	var pcol := Game.swatch(Game.players[player.slot].color)
 	draw_rect(Rect2(bx - 5, top, 10, bot - top), Color(0, 0, 0, 0.55))
 	var f := clampf(player.d() / road.length, 0.0, 1.0)
 	var my := bot - (bot - top) * f
@@ -102,7 +102,7 @@ func _draw_super(player: PlayerCar, w: float) -> void:
 ## Bottom-centre control pad: arrows light up while steering, slow/fast buttons while accelerating.
 func _draw_controls(player: PlayerCar, w: float, h: float) -> void:
 	var slot := player.slot
-	var kb: bool = Game.players[slot]["kb"]
+	var kb: bool = Game.players[slot].kb
 	var cx := w * 0.5
 	var y := h - 58.0
 	var steer := InputManager.steer(slot)
@@ -127,7 +127,7 @@ func _draw_controls(player: PlayerCar, w: float, h: float) -> void:
 	var a_on := InputManager.pressed(slot, "slow")
 	var b_on := InputManager.pressed(slot, "fast")
 	var bx := cx + 70.0
-	var dev: int = Game.players[slot]["device"]
+	var dev: int = Game.players[slot].device
 	var style := InputManager.pad_style(dev) if not kb and dev >= 0 else ""
 	for g in [["slow", 0.0, Color("3ec45a"), a_on], ["fast", 64.0, Color("e0453a"), b_on]]:
 		var lab := _gear_label(slot, g[0])

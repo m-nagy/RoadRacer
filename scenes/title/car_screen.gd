@@ -34,7 +34,7 @@ func open() -> void:
 		c.queue_free()
 	_cards.clear()
 	for slot in Game.active_slots():
-		Game.players[slot]["ready"] = false
+		Game.players[slot].ready = false
 		var c := PlayerCard.new()
 		c.slot = slot
 		_row.add_child(c)
@@ -56,7 +56,7 @@ func _input(event: InputEvent) -> void:
 
 func _begin() -> void:
 	for slot in Game.active_slots():
-		Game.players[slot]["ready"] = true
+		Game.players[slot].ready = true
 	AudioManager.play("select")
 	_go_timer = 0.4
 
@@ -74,28 +74,28 @@ func _process(delta: float) -> void:
 		return
 	for c in _cards:
 		var slot: int = c.slot
-		var p: Dictionary = Game.players[slot]
+		var p: PlayerSlot = Game.players[slot]
 		var changed := false
-		if not p["ready"]:
+		if not p.ready:
 			if InputManager.just_pressed(slot, "left"):
-				p["color"] = posmod(int(p["color"]) - 1, Game.COLORS.size())
+				p.color = posmod(int(p.color) - 1, Game.COLORS.size())
 				changed = true
 			if InputManager.just_pressed(slot, "right"):
-				p["color"] = posmod(int(p["color"]) + 1, Game.COLORS.size())
+				p.color = posmod(int(p.color) + 1, Game.COLORS.size())
 				changed = true
 			if InputManager.just_pressed(slot, "up") or InputManager.just_pressed(slot, "down"):
-				p["easy"] = not p["easy"]
+				p.easy = not p.easy
 				changed = true
 			if InputManager.just_pressed(slot, "slow"):
-				p["ready"] = true
+				p.ready = true
 				AudioManager.play("select")
 				changed = true
 		elif InputManager.just_pressed(slot, "fast"):
-			p["ready"] = false
+			p.ready = false
 			changed = true
 		if changed:
 			AudioManager.play("blip", -6.0)
 			c.refresh()
 	var act := Game.active_slots()
-	if not act.is_empty() and act.all(func(s): return Game.players[s]["ready"]):
+	if not act.is_empty() and act.all(func(s): return Game.players[s].ready):
 		_go_timer = 0.5

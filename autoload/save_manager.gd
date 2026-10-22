@@ -87,7 +87,7 @@ func save() -> void:
 
 func store_prefs() -> void:
 	for i in Game.MAX_PLAYERS:
-		prefs[i] = {"color": Game.players[i]["color"], "easy": Game.players[i]["easy"]}
+		prefs[i] = {"color": Game.players[i].color, "easy": Game.players[i].easy}
 	save()
 
 

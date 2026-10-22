@@ -24,8 +24,8 @@ func _ready() -> void:
 	if not Game.prefs_applied:
 		Game.prefs_applied = true
 		for i in Game.MAX_PLAYERS:
-			Game.players[i]["color"] = SaveManager.prefs[i]["color"]
-			Game.players[i]["easy"] = SaveManager.prefs[i]["easy"]
+			Game.players[i].color = SaveManager.prefs[i]["color"]
+			Game.players[i].easy = SaveManager.prefs[i]["easy"]
 	_build_background()
 	_build_header()
 	_build_menu()
