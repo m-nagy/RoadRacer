@@ -6,7 +6,7 @@ extends Resource
 @export var id := ""             # unique, used in the save file and to pick the stage
 @export var name := ""
 @export var rng_seed := 0        # fixes the course (obstacles, fuel cans, scenery) of this stage
-@export var requires := ""       # id of the stage that must be cleared first (challenges); empty = by list order
+@export var description := ""    # shown on the stage card in Stage Select
 @export_enum("city", "country", "bridge", "desert", "snow", "night") var theme := "city"
 @export var weather: WeatherData     # looks and handling of the weather (data/weather/)
 @export var night := false

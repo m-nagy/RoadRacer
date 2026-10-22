@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="WorldData" format=3]
+
+[ext_resource type="Script" path="res://data/world_data.gd" id="1_script"]
+[ext_resource type="Script" path="res://data/stage_variant.gd" id="9_variant"]
+[ext_resource type="Resource" path="res://data/stages/desert_1.tres" id="2_desert_1"]
+[ext_resource type="Resource" path="res://data/stages/desert_2.tres" id="3_desert_2"]
+[ext_resource type="Resource" path="res://data/stages/desert_3.tres" id="4_desert_3"]
+
+[resource]
+script = ExtResource("1_script")
+id = "desert"
+name = "Desert Run"
+stages = Array[ExtResource("9_variant")]([ExtResource("2_desert_1"), ExtResource("3_desert_2"), ExtResource("4_desert_3")])

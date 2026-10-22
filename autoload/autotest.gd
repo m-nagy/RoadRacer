@@ -5,7 +5,7 @@ extends Node
 ## Drives the real game with the AutoPilot, prints stats and saves screenshots to user://autotest/.
 
 var enabled := false
-var stage_id := "city"
+var stage_id := "city_1"
 var players := 1
 var easy := true
 var seconds := 60.0
@@ -54,6 +54,18 @@ var _shot_done: Dictionary = {}
 var _race: Node = null
 
 
+## `stage=7` (the 7th stage of the game), `stage=3-1` (world 3, stage 1) or a stage id.
+func _parse_stage(v: String) -> String:
+	var list := Stages.all()
+	if v.is_valid_int():
+		return list[clampi(int(v) - 1, 0, list.size() - 1)].id
+	var parts := v.split("-")
+	if parts.size() == 2 and parts[0].is_valid_int() and parts[1].is_valid_int():
+		var world := Stages.WORLDS[clampi(int(parts[0]) - 1, 0, Stages.WORLDS.size() - 1)]
+		return world.stages[clampi(int(parts[1]) - 1, 0, world.stages.size() - 1)].id
+	return v
+
+
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	for a in OS.get_cmdline_user_args():
@@ -61,7 +73,7 @@ func _ready() -> void:
 			enabled = true
 		elif a.begins_with("stage="):
 			var v := a.get_slice("=", 1)
-			stage_id = Stages.CAMPAIGN[clampi(int(v) - 1, 0, Stages.CAMPAIGN.size() - 1)].id if v.is_valid_int() else v
+			stage_id = _parse_stage(v)
 		elif a.begins_with("players="):
 			players = int(a.get_slice("=", 1))
 		elif a.begins_with("easy="):
@@ -190,8 +202,6 @@ func _process(delta: float) -> void:
 				var devs: Array = scene.players_screen.devices
 				devs[0]["pos"] = -1
 				devs[1]["pos"] = 1
-			if title_screen == 1 and title_tab == 1:
-				scene.stage_select.select_tab(1)
 			if title_screen == 4 and title_tab == 1:
 				scene.options_screen.select_tab(1)
 		for s in shots:
@@ -289,7 +299,7 @@ func _process(delta: float) -> void:
 		if _t >= s and not _shot_done.has(s):
 			_shot_done[s] = true
 			var img := get_viewport().get_texture().get_image()
-			var path := "user://autotest/s%s_p%d_%03d.png" % [Stages.index_of(stage_id) + 1 if not Stages.is_challenge(stage_id) else stage_id, players, int(s * 10)]
+			var path := "user://autotest/s%s_p%d_%03d.png" % [stage_id, players, int(s * 10)]
 			img.save_png(path)
 			print("[autotest] screenshot ", ProjectSettings.globalize_path(path))
 	_audit_rivals(world)

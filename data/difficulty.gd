@@ -14,8 +14,8 @@ const LEVELS: Dictionary[String, DifficultyLevel] = {
 }
 
 const CRASH_COST := 4.6       # net timer cost of a crash: 5 s penalty + re-accelerating, minus the 1.6 s the timer is paused while wrecked
-const MARGIN := 1.03          # a clean run should finish with a little to spare
-const FUEL_TAKEN := 0.5       # assume half of the fuel cans get collected
+const MARGIN := 1.06          # a clean run should finish with a little to spare
+const FUEL_TAKEN := 0.1       # assume only 10% of the fuel cans get collected (the bot gets 15-40%)
 const FULL_START := 100.0     # starting time of a stage long enough to need nothing else
 const MIN_START := 45.0       # ...and the least a short stage starts with
 const MIN_BONUS := 10.0

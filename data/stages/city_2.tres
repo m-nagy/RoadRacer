@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="StageVariant" format=3]
+
+[ext_resource type="Resource" path="res://data/tracks/city.tres" id="1_base"]
+[ext_resource type="Script" path="res://data/stage_variant.gd" id="2_script"]
+[ext_resource type="Resource" path="res://data/weather/rain.tres" id="3_weather"]
+
+[resource]
+script = ExtResource("2_script")
+id = "city_2"
+name = "Wet Afternoon"
+description = "Rain on the asphalt: the car slides more and the road is busier."
+base = ExtResource("1_base")
+weather = ExtResource("3_weather")
+time_of_day = "day"
+length_scale = 0.45
+v_slow = 300.0
+v_fast = 290.0
+rng_seed = 2002

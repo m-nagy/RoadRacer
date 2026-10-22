@@ -333,7 +333,11 @@ func _end_clear() -> void:
 		buttons.append(["Next Stage", func(): Game.go_to_race(next)])
 	buttons.append(["Replay Stage", func(): Game.go_to_race(_stage_id)])
 	buttons.append(["Title", Game.go_to_title])
-	var title := "ALL STAGES CLEAR!" if next == "" and not Stages.is_challenge(_stage_id) else "STAGE CLEAR!"
+	var title := "STAGE CLEAR!"
+	if next == "":
+		title = "ALL STAGES CLEAR!"
+	elif Stages.is_last_in_world(_stage_id):
+		title = "WORLD CLEAR!"
 	_show_menu("clear", title, lines, buttons)
 
 
@@ -350,6 +354,6 @@ func _end_fail() -> void:
 		lines.append("%s: %d pts" % [tag, int(p.score)])
 	_show_menu("fail", "OUT OF FUEL", lines, [
 		["Retry Stage", func(): Game.go_to_race(_stage_id)],
-		["New Game", func(): Game.go_to_race(Stages.CAMPAIGN[0].id)],
+		["New Game", func(): Game.go_to_race(Stages.all()[0].id)],
 		["Title", Game.go_to_title],
 	])

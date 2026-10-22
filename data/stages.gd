@@ -1,90 +1,95 @@
 class_name Stages
-## The stages. The campaign is the 6 stages in play order (StageData resources in data/stages/).
-## Challenges are variants of campaign stages with their own weather and length (see StageVariant);
-## they are listed separately in Stage Select and unlock when the stage they are based on is cleared.
-## Everything refers to a stage by its `id`, so lists can grow or change order without breaking saves.
+## The stages. The game is 6 worlds (WorldData in data/worlds/) of 3 stages each (StageVariant in
+## data/stages/), played in that order: a stage opens when the one before it has been cleared.
+## Everything refers to a stage by its `id`, so the lists can grow or change order without breaking saves.
 
 const LANE_W := 88.0
 
-const CAMPAIGN: Array[StageData] = [
-	preload("res://data/stages/stage1.tres"),
-	preload("res://data/stages/stage2.tres"),
-	preload("res://data/stages/stage3.tres"),
-	preload("res://data/stages/stage4.tres"),
-	preload("res://data/stages/stage5.tres"),
-	preload("res://data/stages/stage6.tres"),
+const WORLDS: Array[WorldData] = [
+	preload("res://data/worlds/city.tres"),
+	preload("res://data/worlds/country.tres"),
+	preload("res://data/worlds/bridge.tres"),
+	preload("res://data/worlds/desert.tres"),
+	preload("res://data/worlds/snow.tres"),
+	preload("res://data/worlds/night_city.tres"),
 ]
 
 const CHECKPOINTS := [0.25, 0.5, 0.75]
 
-## The challenges: variants of campaign stages (see StageVariant), in the order Stage Select lists them.
-const VARIANTS: Array[StageVariant] = [
-	preload("res://data/challenges/rain_city.tres"),
-	preload("res://data/challenges/fog_country.tres"),
-	preload("res://data/challenges/gale_bridge.tres"),
-	preload("res://data/challenges/storm_desert.tres"),
-	preload("res://data/challenges/blizzard_snow.tres"),
-	preload("res://data/challenges/dry_night_city.tres"),
-]
-
-static var _challenges: Array[StageData] = []   # built from VARIANTS on first use
+static var _all: Array[StageData] = []      # every stage in play order, built on first use
+static var _world_index: Dictionary = {}    # stage id -> index into WORLDS
+static var _pos_in_world: Dictionary = {}   # stage id -> 0-based position inside its world
 
 
-static func challenges() -> Array[StageData]:
-	if _challenges.is_empty():
-		for v in VARIANTS:
-			_challenges.append(v.build())
-	return _challenges
+static func all() -> Array[StageData]:
+	if _all.is_empty():
+		for wi in WORLDS.size():
+			var world := WORLDS[wi]
+			for i in world.stages.size():
+				var s := world.stages[i].build()
+				_all.append(s)
+				_world_index[s.id] = wi
+				_pos_in_world[s.id] = i
+	return _all
 
 
-## The stage with this id (the first campaign stage if there is no such stage).
+## The stage with this id (the first stage if there is no such stage).
 static func by_id(id: String) -> StageData:
-	for s in CAMPAIGN:
+	for s in all():
 		if s.id == id:
 			return s
-	for s in challenges():
-		if s.id == id:
-			return s
-	return CAMPAIGN[0]
+	return all()[0]
 
 
-static func is_challenge(id: String) -> bool:
-	for s in challenges():
+static func has(id: String) -> bool:
+	for s in all():
 		if s.id == id:
 			return true
 	return false
 
 
-## The list (campaign or challenges) this stage belongs to.
-static func list_of(id: String) -> Array[StageData]:
-	return challenges() if is_challenge(id) else CAMPAIGN
-
-
-## Position of a stage in its own list, 0-based.
+## Position in the whole game, 0-based.
 static func index_of(id: String) -> int:
-	var list := list_of(id)
+	var list := all()
 	for i in list.size():
 		if list[i].id == id:
 			return i
 	return 0
 
 
-## The stage that follows in the same list, or "" at the end.
+## The stage that follows, or "" after the last one.
 static func next_id(id: String) -> String:
-	var list := list_of(id)
+	var list := all()
 	var i := index_of(id) + 1
 	return list[i].id if i < list.size() else ""
 
 
-## "STAGE 3" or "CHALLENGE 2".
+static func world_of(id: String) -> WorldData:
+	all()
+	return WORLDS[_world_index.get(id, 0)]
+
+
+## 1-based position of the stage inside its world (1..3).
+static func number_in_world(id: String) -> int:
+	all()
+	return int(_pos_in_world.get(id, 0)) + 1
+
+
+static func is_last_in_world(id: String) -> bool:
+	return number_in_world(id) == world_of(id).stages.size()
+
+
+## "2-3": world 2, third stage.
+static func short_label(id: String) -> String:
+	return "%d-%d" % [WORLDS.find(world_of(id)) + 1, number_in_world(id)]
+
+
+## "STAGE 2-3".
 static func label(id: String) -> String:
-	return "%s %d" % ["CHALLENGE" if is_challenge(id) else "STAGE", index_of(id) + 1]
+	return "STAGE " + short_label(id)
 
 
 ## The stage that has to be cleared before this one can be played ("" = always open).
 static func requirement(id: String) -> String:
-	var s := by_id(id)
-	if s.requires != "":
-		return s.requires
 	var i := index_of(id)
-	return "" if i == 0 or is_challenge(id) else CAMPAIGN[i - 1].id
+	return "" if i == 0 else all()[i - 1].id

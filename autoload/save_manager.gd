@@ -154,18 +154,19 @@ func is_cleared(id: String) -> bool:
 	return cleared.has(id)
 
 
-## Campaign stages open up one after the other; a challenge opens when the stage it is based on is cleared.
+## Stages open up one after the other.
 func is_unlocked(id: String) -> bool:
 	var need := Stages.requirement(id)
 	return need == "" or cleared.has(need)
 
 
-## The stage the "Continue" button offers: the first campaign stage not cleared yet (the last one when all are).
+## The stage the "Continue" button offers: the first stage not cleared yet (the last one when all are).
 func continue_id() -> String:
-	for s in Stages.CAMPAIGN:
+	var list := Stages.all()
+	for s in list:
 		if not cleared.has(s.id):
 			return s.id
-	return Stages.CAMPAIGN[Stages.CAMPAIGN.size() - 1].id
+	return list[list.size() - 1].id
 
 
 ## Returns true when the score is a new personal best.

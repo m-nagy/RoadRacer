@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="WorldData" format=3]
+
+[ext_resource type="Script" path="res://data/world_data.gd" id="1_script"]
+[ext_resource type="Script" path="res://data/stage_variant.gd" id="9_variant"]
+[ext_resource type="Resource" path="res://data/stages/bridge_1.tres" id="2_bridge_1"]
+[ext_resource type="Resource" path="res://data/stages/bridge_2.tres" id="3_bridge_2"]
+[ext_resource type="Resource" path="res://data/stages/bridge_3.tres" id="4_bridge_3"]
+
+[resource]
+script = ExtResource("1_script")
+id = "bridge"
+name = "Seaside Bridge"
+stages = Array[ExtResource("9_variant")]([ExtResource("2_bridge_1"), ExtResource("3_bridge_2"), ExtResource("4_bridge_3")])

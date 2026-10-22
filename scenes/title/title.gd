@@ -82,7 +82,7 @@ func _setup_menu() -> void:
 	var continue_button: Button = %Continue
 	continue_button.text = "Continue  -  %s: %s" % [Stages.label(cont).capitalize(), Stages.by_id(cont).name]
 	continue_button.pressed.connect(func(): _pick_stage(cont))
-	_menu_box.get_node("NewGame").pressed.connect(func(): _pick_stage(Stages.CAMPAIGN[0].id))
+	_menu_box.get_node("NewGame").pressed.connect(func(): _pick_stage(Stages.all()[0].id))
 	_menu_box.get_node("StageSelectButton").pressed.connect(func(): show_screen(Screen.STAGES))
 	_menu_box.get_node("OptionsButton").pressed.connect(func(): show_screen(Screen.OPTIONS))
 	_menu_box.get_node("Fullscreen").pressed.connect(func():

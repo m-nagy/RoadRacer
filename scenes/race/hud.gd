@@ -33,7 +33,7 @@ var _time_low := false
 
 
 func _ready() -> void:
-	_stage_label.text = "%s  -  %s" % [stage_label, String(world.level_name).to_upper()]
+	_stage_label.text = "%s - %s" % [stage_label, String(world.level_name).to_upper()]
 
 
 func add_popup(text: String, kind: String) -> void:

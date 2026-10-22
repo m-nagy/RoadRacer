@@ -9,7 +9,7 @@ const COLORS := GameConst.COLORS
 
 ## One entry per slot (see PlayerSlot).
 var players: Array[PlayerSlot] = []
-var stage_id := "city"   # the stage being raced (see Stages)
+var stage_id := "city_1"   # the stage being raced (see Stages)
 var shader: Shader = preload("res://shaders/car_color.gdshader")
 var prefs_applied := false
 var pending_stage_id := "" # stage chosen on the home screen, started after players + cars are picked

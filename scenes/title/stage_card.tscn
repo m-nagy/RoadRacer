@@ -1,0 +1,88 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scenes/title/stage_card.gd" id="1_card"]
+
+[node name="StageCard" type="Button"]
+custom_minimum_size = Vector2(360, 338)
+offset_right = 360.0
+offset_bottom = 338.0
+script = ExtResource("1_card")
+
+[node name="Margin" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 8
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 8
+theme_override_constants/margin_bottom = 8
+
+[node name="Box" type="VBoxContainer" parent="Margin"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 3
+
+[node name="Picture" type="TextureRect" parent="Margin/Box"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(344, 194)
+layout_mode = 2
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 6
+
+[node name="Lock" type="Label" parent="Margin/Box/Picture"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 8
+theme_override_font_sizes/font_size = 40
+text = "LOCKED"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Title" type="Label" parent="Margin/Box"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_font_sizes/font_size = 22
+text_overrun_behavior = 3
+clip_text = true
+
+[node name="Facts" type="Label" parent="Margin/Box"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.784314, 0.901961, 1, 1)
+theme_override_font_sizes/font_size = 15
+text_overrun_behavior = 3
+clip_text = true
+
+[node name="Description" type="Label" parent="Margin/Box"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+size_flags_vertical = 3
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 1, 1, 0.85)
+theme_override_font_sizes/font_size = 15
+autowrap_mode = 3
+
+[node name="Status" type="Label" parent="Margin/Box"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.43, 1)
+theme_override_font_sizes/font_size = 16
+text_overrun_behavior = 3
+clip_text = true
