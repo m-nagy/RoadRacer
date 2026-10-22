@@ -3,13 +3,19 @@ extends Node
 ## see SaveManager.controls). A player plays with either the keyboard (using their slot's keyboard
 ## keys) or one gamepad (using their slot's gamepad bindings).
 ##
+## Autoload order: uses Game and SaveManager (both loaded before it).
+##
 ## Button state is evaluated here every frame (before anything else) instead of through InputMap,
 ## so buttons that were already held when a pad connected or a screen opened can be ignored until
 ## they are released ("stuck input" filter).
+##
+## Why not plain InputMap actions? InputMap cannot (a) ignore a button that was already down, (b) drop
+## the second copy of a press that a virtual pad (DS4Windows) sends, or (c) give each of two players
+## their own remappable keys + pad on one screen. The menus still use InputMap for ui_accept / ui_cancel
+## / ui_left...; this code only owns in-race and per-player input.
 
-const ACTIONS := ["left", "right", "up", "down", "slow", "fast", "pause"]
-const ACTION_NAMES := {"left": "Left", "right": "Right", "up": "Up", "down": "Down / Brake",
-	"slow": "Slow speed", "fast": "Fast speed", "pause": "Pause"}
+const ACTIONS := ControlDefaults.ACTIONS
+const ACTION_NAMES := ControlDefaults.ACTION_NAMES
 const AXIS_THRESHOLD := 0.5
 const TWIN_MS := 100           # two pads pressing the same input this close together = one controller seen twice
 
@@ -99,7 +105,7 @@ func _input(event: InputEvent) -> void:
 		return
 	# Fullscreen toggle works everywhere: F11 or Alt+Enter. F3 shows collision boxes.
 	if event is InputEventKey and event.pressed and not event.echo:
-		if event.physical_keycode == KEY_F3:
+		if event.physical_keycode == KEY_F3 and OS.is_debug_build():
 			Game.debug_boxes = not Game.debug_boxes
 		if event.physical_keycode == KEY_F11 or (event.physical_keycode == KEY_ENTER and event.alt_pressed):
 			Game.set_fullscreen(not Game.is_fullscreen())
@@ -120,8 +126,8 @@ func _on_joy_changed(device: int, connected: bool) -> void:
 	else:
 		_blocked.erase(device)
 		for slot in Game.MAX_PLAYERS:
-			if Game.players[slot]["device"] == device:
-				Game.players[slot]["device"] = -1
+			if Game.players[slot].device == device:
+				Game.players[slot].device = -1
 				rebuild(slot)
 	pad_connection_changed.emit()
 
@@ -224,14 +230,14 @@ func _raw_pressed(slot: int, action: String) -> bool:
 
 ## 0..1 strength of an action from the player's keyboard keys or gamepad.
 func _strength(slot: int, action: String) -> float:
-	var p: Dictionary = Game.players[slot]
+	var p: PlayerSlot = Game.players[slot]
 	var prof: Dictionary = profile(slot)
 	var best := 0.0
-	if p.get("kb", false):
+	if p.kb:
 		var key: int = prof["kb"].get(action, 0)
 		if key != 0 and Input.is_physical_key_pressed(key):
 			best = 1.0
-	var dev: int = p["device"]
+	var dev: int = p.device
 	if dev >= 0:
 		for ev in prof["pad"].get(action, []):
 			if ev["t"] == "b":
@@ -246,8 +252,10 @@ func action_name(slot: int, action: String) -> String:
 	return "p%d_%s" % [slot, action]
 
 
+## Read live (not from the per-frame cache) so the physics tick, which can run several times per
+## rendered frame, always sees the current state.
 func pressed(slot: int, action: String) -> bool:
-	return _cur[slot].get(action, false)
+	return _raw_pressed(slot, action)
 
 
 func just_pressed(slot: int, action: String) -> bool:
@@ -268,14 +276,14 @@ func steer(slot: int) -> float:
 # ------------------------------------------------------------ assignment & profiles
 
 func assign_pad(slot: int, device: int) -> void:
-	Game.players[slot]["device"] = device
-	Game.players[slot]["kb"] = false
+	Game.players[slot].device = device
+	Game.players[slot].kb = false
 	rebuild(slot)
 
 
 func assign_keyboard(slot: int) -> void:
-	Game.players[slot]["device"] = -1
-	Game.players[slot]["kb"] = true
+	Game.players[slot].device = -1
+	Game.players[slot].kb = true
 	rebuild(slot)
 
 
@@ -301,8 +309,8 @@ func rebuild(slot: int) -> void:
 ## Short on-screen label for an action of a player: a key name ("G", "Left"...) or pad button.
 ## Arrow keys return "left"/"right"/"up"/"down" so they can be drawn as arrows.
 func label(slot: int, action: String) -> String:
-	var p: Dictionary = Game.players[slot]
-	if p.get("kb", false):
+	var p: PlayerSlot = Game.players[slot]
+	if p.kb:
 		return key_label(profile(slot)["kb"].get(action, 0))
 	var evs: Array = profile(slot)["pad"].get(action, [])
 	return pad_label(evs[0] if not evs.is_empty() else {})
@@ -333,6 +341,16 @@ static func pad_label(ev: Dictionary) -> String:
 		JOY_BUTTON_RIGHT_SHOULDER: "RB", JOY_BUTTON_LEFT_STICK: "L3", JOY_BUTTON_RIGHT_STICK: "R3",
 		JOY_BUTTON_DPAD_LEFT: "left", JOY_BUTTON_DPAD_RIGHT: "right", JOY_BUTTON_DPAD_UP: "up", JOY_BUTTON_DPAD_DOWN: "down"}
 	return b.get(int(ev["i"]), "Btn %d" % ev["i"])
+
+
+## Inputs of a pad that are being ignored until released (for the test bot's pad log).
+func blocked_inputs(dev: int) -> Dictionary:
+	return _blocked.get(dev, {})
+
+
+## Pads that are detected copies of another pad (for the test bot).
+func mirrored_pads() -> Array:
+	return _mirror.keys()
 
 
 ## Gamepads that should be offered to players: every connected pad except detected copies.

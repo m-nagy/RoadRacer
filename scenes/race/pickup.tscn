@@ -1,0 +1,13 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scenes/race/pickup.gd" id="1_pickup"]
+
+[node name="Pickup" type="Node2D"]
+script = ExtResource("1_pickup")
+
+[node name="Glow" type="Node2D" parent="."]
+
+[node name="Can" type="Node2D" parent="."]
+
+[connection signal="draw" from="Glow" to="." method="_draw_glow"]
+[connection signal="draw" from="Can" to="." method="_draw_can"]

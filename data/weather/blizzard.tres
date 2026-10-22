@@ -1,0 +1,32 @@
+[gd_resource type="Resource" script_class="WeatherData" format=3]
+
+[ext_resource type="Script" path="res://data/weather_layer.gd" id="1_ql4rg"]
+[ext_resource type="Script" path="res://data/weather_data.gd" id="2_phofh"]
+
+[sub_resource type="Resource" id="Resource_l04ls"]
+script = ExtResource("1_ql4rg")
+amount = 340
+lifetime = 2.2
+direction = Vector2(-0.55, 1)
+speed = 420.0
+shape = 1
+color = Color(1, 1, 1, 0.9)
+scale = 1.1
+
+[sub_resource type="Resource" id="Resource_cryay"]
+script = ExtResource("1_ql4rg")
+amount = 50
+lifetime = 0.8
+direction = Vector2(-1, 0.1)
+speed = 1000.0
+color = Color(1, 1, 1, 0.2)
+horizontal = true
+
+[resource]
+script = ExtResource("2_phofh")
+id = "blizzard"
+label = "Blizzard"
+grip = 0.6
+wind = 70.0
+tint = Color(0.88, 0.93, 1, 0.24)
+layers = Array[ExtResource("1_ql4rg")]([SubResource("Resource_l04ls"), SubResource("Resource_cryay")])

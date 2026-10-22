@@ -1,73 +1,84 @@
 class_name Weather
 extends CanvasLayer
-## Screen-space weather for one viewport (rain, snow, sand, leaves, wind streaks).
+## Screen-space weather for one viewport (rain, snow, sand, leaves, wind streaks), built from a WeatherData.
 
-var kind := "none"
 var _emitters: Array = []
 var _tint: ColorRect
 var _tex_streak: ImageTexture
 var _tex_dot: ImageTexture
+var _tex_blob: GradientTexture2D
 
 
 func _init() -> void:
 	layer = 5
 
 
-func setup(weather_kind: String) -> void:
-	kind = weather_kind
+## Builds the tint and one particle emitter per layer of the weather. `density` thins the particles out.
+func setup(weather: WeatherData, density := 1.0, tint_scale := 1.0) -> void:
 	_tex_streak = _make_tex(2, 20)
 	_tex_dot = _make_tex(6, 6)
+	_tex_blob = _make_blob()
 	_tint = ColorRect.new()
 	_tint.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_tint.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_tint.color = Color(0, 0, 0, 0)
+	_tint.color = weather.tint
+	_tint.color.a *= tint_scale
 	add_child(_tint)
-	match kind:
-		"rain":
-			_add(260, 0.55, Vector2(-0.2, 1.0), 1100.0, _tex_streak, Color(0.7, 0.8, 1.0, 0.55), 1.0)
-			_tint.color = Color(0.05, 0.08, 0.2, 0.18)
-		"snow":
-			_add(160, 3.0, Vector2(-0.15, 1.0), 120.0, _tex_dot, Color(1, 1, 1, 0.9), 1.0)
-			_tint.color = Color(0.85, 0.92, 1.0, 0.10)
-		"sand":
-			_add(120, 0.7, Vector2(-1.0, 0.25), 1100.0, _tex_streak, Color(0.86, 0.68, 0.38, 0.5), 1.0, true)
-			_tint.color = Color(0.8, 0.55, 0.2, 0.22)
-		"leaves":
-			_add(14, 5.0, Vector2(-0.4, 1.0), 90.0, _tex_dot, Color(0.85, 0.55, 0.15, 0.9), 1.6)
-		"wind":
-			_add(30, 0.9, Vector2(-1.0, 0.1), 900.0, _tex_streak, Color(1, 1, 1, 0.25), 1.0, true)
+	for l in weather.layers:
+		_add(l, density)
+	get_viewport().size_changed.connect(_layout)
+	_layout()
 
 
 func _make_tex(w: int, h: int) -> ImageTexture:
-	var img := Image.create(w, h, false, Image.FORMAT_RGBA8)
+	var img := Image.create_empty(w, h, false, Image.FORMAT_RGBA8)
 	img.fill(Color.WHITE)
 	return ImageTexture.create_from_image(img)
 
 
-func _add(amount: int, life: float, dir: Vector2, speed: float, tex: Texture2D, col: Color, scale_amt: float, horizontal := false) -> void:
+func _make_blob() -> GradientTexture2D:
+	var g := Gradient.new()
+	g.set_color(0, Color.WHITE)
+	g.set_color(1, Color(1, 1, 1, 0))
+	var t := GradientTexture2D.new()
+	t.gradient = g
+	t.fill = GradientTexture2D.FILL_RADIAL
+	t.fill_from = Vector2(0.5, 0.5)
+	t.fill_to = Vector2(1.0, 0.5)
+	t.width = 64
+	t.height = 64
+	return t
+
+
+func _add(l: WeatherLayer, density: float) -> void:
+	var tex: Texture2D = _tex_dot
+	match l.shape:
+		WeatherLayer.Shape.STREAK: tex = _tex_streak
+		WeatherLayer.Shape.BLOB: tex = _tex_blob
 	var p := CPUParticles2D.new()
-	p.amount = amount
-	p.lifetime = life
-	p.preprocess = life
+	p.amount = maxi(1, roundi(l.amount * density))
+	p.lifetime = l.lifetime
+	p.preprocess = l.lifetime
 	p.texture = tex
-	p.direction = dir
-	p.spread = 6.0 if speed > 500.0 else 25.0
-	p.initial_velocity_min = speed * 0.8
-	p.initial_velocity_max = speed * 1.2
+	p.direction = l.direction
+	p.spread = 6.0 if l.speed > 500.0 else 25.0
+	p.initial_velocity_min = l.speed * 0.8
+	p.initial_velocity_max = l.speed * 1.2
 	p.gravity = Vector2.ZERO
-	p.color = col
-	p.scale_amount_min = scale_amt
-	p.scale_amount_max = scale_amt * 1.4
+	p.color = l.color
+	p.scale_amount_min = l.scale
+	p.scale_amount_max = l.scale * 1.4
 	p.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
 	p.emission_rect_extents = Vector2(700, 10)
 	p.local_coords = true
-	p.set_meta("horizontal", horizontal)
-	p.particle_flag_align_y = tex == _tex_streak
+	p.set_meta("horizontal", l.horizontal)
+	p.particle_flag_align_y = l.shape == WeatherLayer.Shape.STREAK
 	add_child(p)
 	_emitters.append(p)
 
 
-func _process(_delta: float) -> void:
+## Emitters sit just outside the viewport edge they start from; only a resize moves them.
+func _layout() -> void:
 	var vp := get_viewport().get_visible_rect().size
 	for e in _emitters:
 		if e.get_meta("horizontal"):

@@ -1,10 +1,11 @@
 extends Node
-## Developer-only bot used for automated checks. Activated by command line:
+## Developer-only bot used for automated checks. It only runs in debug builds (it frees itself in
+## exported releases) and talks to the game through its public methods and signals. Activated by command line:
 ##   godot --path . -- --autotest stage=2 players=2 easy=1 seconds=60 gear=fast shots=5,15,30
 ## Drives the real game with the AutoPilot, prints stats and saves screenshots to user://autotest/.
 
 var enabled := false
-var stage := 0
+var stage_id := "city"
 var players := 1
 var easy := true
 var seconds := 60.0
@@ -22,6 +23,11 @@ var keydrive := false
 var _kd_state := {}
 var _flow_i := 0
 var diff := ""
+var gpu_mode := false   # gpu: measure and print the GPU time of every viewport (needs a real window, not --headless)
+var _gpu_viewports: Array[RID] = []
+var _gpu_sum: Array[float] = []
+var _gpu_n := 0
+var cleared_arg := ""   # cleared=city,bridge: pretend only these stages are cleared (in memory only)
 var no_time := false
 var hit_kind := ""
 var police_at := -1.0
@@ -54,7 +60,8 @@ func _ready() -> void:
 		if a == "--autotest":
 			enabled = true
 		elif a.begins_with("stage="):
-			stage = int(a.get_slice("=", 1)) - 1
+			var v := a.get_slice("=", 1)
+			stage_id = Stages.CAMPAIGN[clampi(int(v) - 1, 0, Stages.CAMPAIGN.size() - 1)].id if v.is_valid_int() else v
 		elif a.begins_with("players="):
 			players = int(a.get_slice("=", 1))
 		elif a.begins_with("easy="):
@@ -80,6 +87,12 @@ func _ready() -> void:
 			title_screen = int(a.get_slice("=", 1))
 		elif a.begins_with("tab="):
 			title_tab = int(a.get_slice("=", 1))
+		elif a.begins_with("graphics="):
+			SaveManager.graphics = a.get_slice("=", 1)
+		elif a == "gpu":
+			gpu_mode = true
+		elif a.begins_with("cleared="):
+			cleared_arg = a.get_slice("=", 1)
 		elif a.begins_with("diff="):
 			diff = a.get_slice("=", 1)
 		elif a == "notime":
@@ -110,9 +123,12 @@ func _ready() -> void:
 			shots = []
 			for s in a.get_slice("=", 1).split(","):
 				shots.append(float(s))
-	if not enabled:
-		set_process(false)
+	if not enabled or not OS.is_debug_build():
+		enabled = false
+		queue_free()
 		return
+	AutoPilot.record_history = true
+	SaveManager.save_path = "user://autotest/save.json"   # runs never touch the real save
 	DirAccess.make_dir_recursive_absolute("user://autotest")
 	Engine.time_scale = scale if scale > 0.0 else 1.0
 	call_deferred("_begin")
@@ -121,25 +137,27 @@ func _ready() -> void:
 func _begin() -> void:
 	Game.reset_players()
 	for i in players:
-		Game.players[i]["active"] = true
-		Game.players[i]["easy"] = easy
-		Game.players[i]["color"] = [0, 4][i]
-		Game.players[i]["ready"] = true
+		Game.players[i].active = true
+		Game.players[i].easy = easy
+		Game.players[i].color = [0, 4][i]
+		Game.players[i].ready = true
 		InputManager.assign_keyboard(i)
 	Game.prefs_applied = true
 	if diff != "":
 		SaveManager.difficulty = diff
+	if cleared_arg != "":
+		SaveManager.cleared.assign(Array(cleared_arg.split(",")) if cleared_arg != "none" else [])
 	if title_mode:
 		for i in players:
-			Game.players[i]["ready"] = false
+			Game.players[i].ready = false
 		if players == 2 and OS.get_cmdline_user_args().has("padp2"):
 			InputManager.assign_pad(1, 0)  # show what a gamepad player's card looks like
 		_started = true
 		get_tree().change_scene_to_file("res://scenes/title/title.tscn")
 		return
-	Game.go_to_race(stage)
+	Game.go_to_race(stage_id)
 	_started = true
-	print("[autotest] stage=%d players=%d easy=%s gear=%s seconds=%.0f tracks=%d impacts=%s -> %s" % [stage + 1, players, easy, gear, seconds, AudioManager._track_names.size(), str(AudioManager._impacts.keys()), ProjectSettings.globalize_path("user://autotest")])
+	print("[autotest] stage=%d players=%d easy=%s gear=%s seconds=%.0f tracks=%d impacts=%s -> %s" % [Stages.index_of(stage_id) + 1, players, easy, gear, seconds, AudioManager.track_count(), str(AudioManager.impact_families()), ProjectSettings.globalize_path("user://autotest")])
 
 
 func _process(delta: float) -> void:
@@ -162,18 +180,20 @@ func _process(delta: float) -> void:
 						var v := Input.get_joy_axis(dev, a)
 						if absf(v) > 0.2:
 							ax.append("%d:%.2f" % [a, v])
-					print("[padlog] t=%.1f dev=%d name=%s guid=%s buttons=%s axes=%s blocked=%s" % [_t, dev, Input.get_joy_name(dev), Input.get_joy_guid(dev), str(b), str(ax), str(InputManager._blocked.get(dev, {}))])
+					print("[padlog] t=%.1f dev=%d name=%s guid=%s buttons=%s axes=%s blocked=%s" % [_t, dev, Input.get_joy_name(dev), Input.get_joy_guid(dev), str(b), str(ax), str(InputManager.blocked_inputs(dev))])
 		if flow != "":
 			_run_flow(scene)
-		if _t > 0.5 and flow == "" and not _title_shown and scene != null and scene.has_method("_show"):
+		if _t > 0.5 and flow == "" and not _title_shown and scene != null and scene.has_method("show_screen"):
 			_title_shown = true
-			scene._show(title_screen)
+			scene.show_screen(title_screen)
 			if title_screen == 2 and title_fill:
-				var devs: Array = scene._players._devices
+				var devs: Array = scene.players_screen.devices
 				devs[0]["pos"] = -1
 				devs[1]["pos"] = 1
+			if title_screen == 1 and title_tab == 1:
+				scene.stage_select.select_tab(1)
 			if title_screen == 4 and title_tab == 1:
-				scene._options._select_tab(1)
+				scene.options_screen.select_tab(1)
 		for s in shots:
 			if _t >= s and not _shot_done.has(s):
 				_shot_done[s] = true
@@ -186,7 +206,13 @@ func _process(delta: float) -> void:
 	var world: World = scene.world
 	if not world.running:
 		return
+	if world != _world:
+		_world = world
+		for p in world.players:
+			p.crashed.connect(_on_player_crashed.bind(p))
 	_t += delta
+	_sample_perf()
+	_sample_gpu()
 	if keydrive:
 		_kd("h", _t > 1.0)                         # P1 default fast key
 		_kd("d", _t > 3.0 and _t < 3.4)            # P1 default right key
@@ -203,7 +229,7 @@ func _process(delta: float) -> void:
 			p.next_cp = world.road.checkpoints.size()
 	if pause_at >= 0.0 and _t >= pause_at and not _paused:
 		_paused = true
-		scene._open_pause()
+		scene.open_pause()
 	if force_crash >= 0.0 and _t >= force_crash and not _crashed:
 		_crashed = true
 		world.players[0].crash("forced")
@@ -228,28 +254,25 @@ func _process(delta: float) -> void:
 		if hit_kind == "all":
 			kinds_to_place = ["cone", "barrel", "rock", "snowbank", "tire", "oil"]
 		for k in kinds_to_place.size():
-			var o := Obstacle.new()
-			world._obstacle_layer.add_child(o)
 			var row: int = k / 3
 			var col: int = k % 3
 			var ox := hp.position.x if hit_kind != "all" else world.road.lane_x(hp.d() + 250.0, col)
-			o.setup(kinds_to_place[k], Vector2(ox, hp.position.y - 330.0 - row * 190.0))
-			world.obstacles.append(o)
+			world.course.place_obstacle(kinds_to_place[k], Vector2(ox, hp.position.y - 330.0 - row * 190.0))
 		print("[hit] placed %s ahead: p d=%.0f u=%.0f v=%.0f" % [hit_kind, hp.d(), hp.position.x - world.road.center_x(hp.d()), hp.speed])
 	if _hit_t > 0.0 and _t < _hit_t + 4.0:
 		var q: PlayerCar = world.players[0]
-		print("[hit] t=+%.2f v=%.0f u=%.0f state=%d crashes=%d skid=%.1f stop=%.1f slide=%s rivals=%d siren_police=%s(%.0f dB) siren_amb=%s" % [_t - _hit_t, q.speed, q.position.x - world.road.center_x(q.d()), q.state, q.crashes, q.skid, q.stop_t, str(q.slide_u), world.rivals.size(), AudioManager._sirens["police"].playing, AudioManager._sirens["police"].volume_db, AudioManager._sirens["ambulance"].playing])
+		print("[hit] t=+%.2f v=%.0f u=%.0f state=%d crashes=%d skid=%.1f stop=%.1f slide=%s rivals=%d siren_police=%s(%.0f dB) siren_amb=%s" % [_t - _hit_t, q.speed, q.position.x - world.road.center_x(q.d()), q.state, q.crashes, q.skid, q.stop_t, str(q.slide_u), world.rivals.size(), AudioManager.siren_playing("police"), AudioManager.siren_volume_db("police"), AudioManager.siren_playing("ambulance")])
 	if police_at >= 0.0 and _t >= police_at:
 		var pp: PlayerCar = world.players[0]
 		if _police_log == 0.0:
-			world.call_police(pp)
+			world.traffic.call_police(pp)
 			_police_log = _t
 		if _t >= _police_log and _t < police_at + 15.0:
 			_police_log = _t + 0.5
 			var line := "[police] t=%.1f player v=%.0f lane=%d bumps=%.1f |" % [_t - police_at, pp.speed, world.road.nearest_lane(pp.d(), pp.position.x), pp.penalty]
 			for r in world.rivals:
 				if r.kind == "police":
-					line += " police ahead_by=%.0f v=%.0f lane=%d chasing=%s free=%s" % [r.d() - pp.d(), r.speed, r.lane_now(), r.chase != null, r._free_x]
+					line += " police ahead_by=%.0f v=%.0f lane=%d chasing=%s free=%s" % [r.d() - pp.d(), r.speed, r.lane_now(), r.chase != null, r.is_chasing()]
 			print(line)
 	if shortcut_test:
 		_drive_shortcut(world)
@@ -266,10 +289,11 @@ func _process(delta: float) -> void:
 		if _t >= s and not _shot_done.has(s):
 			_shot_done[s] = true
 			var img := get_viewport().get_texture().get_image()
-			var path := "user://autotest/s%d_p%d_%03d.png" % [stage + 1, players, int(s * 10)]
+			var path := "user://autotest/s%s_p%d_%03d.png" % [Stages.index_of(stage_id) + 1 if not Stages.is_challenge(stage_id) else stage_id, players, int(s * 10)]
 			img.save_png(path)
 			print("[autotest] screenshot ", ProjectSettings.globalize_path(path))
 	_audit_rivals(world)
+	_audit_narrow(world)
 	if _t >= _next_stat:
 		_next_stat += stat_every
 		var line := "[autotest] t=%.0f" % _t
@@ -291,8 +315,63 @@ func _process(delta: float) -> void:
 		for q in world.players:
 			cr += q.crashes
 		var eff: float = world.road.length / maxf(world.t - cr * Difficulty.CRASH_COST / float(world.players.size()), 1.0)
-		print("[autotest] finished at t=%.1f  sim_t=%.1f length=%.0f crashes=%d  v_eff=%.0f px/s  state=%d time_left=%.0f fuel=%d/%d" % [_t, world.t, world.road.length, cr, eff, wp.state, wp.time_left, world.pickups_total - world.pickups.size(), world.pickups_total])
+		for q in world.players:
+			print("[totals] P%d score=%d crashes=%d overtakes=%d state=%d d=%.0f" % [q.slot + 1, int(q.score), q.crashes, q.overtakes, q.state, q.d()])
+		print("[narrow] ticks=%d slow=%d share=%.1f%% avg_v=%.0f walls=%d" % [_narrow_ticks, _narrow_slow, 100.0 * _narrow_slow / maxf(_narrow_ticks, 1), _narrow_v / maxf(_narrow_ticks, 1), _walls_narrow])
+		if gpu_mode and _gpu_n > 0:
+			var g := "[gpu] frames=%d" % _gpu_n
+			for i in _gpu_sum.size():
+				g += "  %s=%.2f ms" % ["window" if i == 0 else "view%d" % i, _gpu_sum[i] / _gpu_n]
+			print(g)
+		print("[perf] samples=%d process_ms avg=%.3f max=%.3f | physics_ms avg=%.3f max=%.3f" % [_perf_n, _perf_proc / maxf(_perf_n, 1), _perf_proc_max, _perf_phys / maxf(_perf_n, 1), _perf_phys_max])
+		print("[autotest] finished at t=%.1f  sim_t=%.1f length=%.0f crashes=%d  v_eff=%.0f px/s  state=%d time_left=%.0f fuel=%d/%d" % [_t, world.t, world.road.length, cr, eff, wp.state, wp.time_left, world.course.pickups_taken, world.course.pickups_total])
 		get_tree().quit()
+
+
+var _perf_n := 0
+var _perf_proc := 0.0
+var _perf_proc_max := 0.0
+var _perf_phys := 0.0
+var _perf_phys_max := 0.0
+
+
+## Engine-reported cost (ms) of the last frame's idle-process and physics-process steps.
+var _world: World   # the race whose players' crashes are being logged
+
+
+func _on_player_crashed(reason: String, impact_speed: float, p: PlayerCar) -> void:
+	print("[crash] P%d d=%.0f v=%.0f x=%.0f road=%.0f reason=%s" % [p.slot + 1, p.d(), impact_speed, p.position.x, _world.road.center_x(p.d()), reason])
+	if p.pilot:
+		for h in p.pilot.history.slice(-14):
+			print("   ", h)
+
+
+## GPU time (ms) per frame of the window and of every player's view; the first frame only switches
+## the measuring on.
+func _sample_gpu() -> void:
+	if not gpu_mode:
+		return
+	if _gpu_viewports.is_empty():
+		_gpu_viewports.append(get_tree().root.get_viewport_rid())
+		for sv in get_tree().current_scene.find_children("*", "SubViewport", true, false):
+			_gpu_viewports.append(sv.get_viewport_rid())
+		for rid in _gpu_viewports:
+			RenderingServer.viewport_set_measure_render_time(rid, true)
+			_gpu_sum.append(0.0)
+		return
+	_gpu_n += 1
+	for i in _gpu_viewports.size():
+		_gpu_sum[i] += RenderingServer.viewport_get_measured_render_time_gpu(_gpu_viewports[i])
+
+
+func _sample_perf() -> void:
+	var pr := Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0
+	var ph := Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0
+	_perf_n += 1
+	_perf_proc += pr
+	_perf_phys += ph
+	_perf_proc_max = maxf(_perf_proc_max, pr)
+	_perf_phys_max = maxf(_perf_phys_max, ph)
 
 
 func _drive_shortcut(world: World) -> void:
@@ -301,12 +380,12 @@ func _drive_shortcut(world: World) -> void:
 		var d: float = p.d()
 		var target_x: float = road.lane_x(d, 1)
 		for sh in road.shortcuts:
-			if d > sh["d0"] - 600.0 and d < sh["d1"] + 50.0:
+			if d > sh.d0 - 600.0 and d < sh.d1 + 50.0:
 				var hw := road.half_width(d)
-				if d < sh["d0"] + 10.0:
-					target_x = road.lane_x(d, 0 if sh["side"] < 0 else road.lane_count(d) - 1)
+				if d < sh.d0 + 10.0:
+					target_x = road.lane_x(d, 0 if sh.side < 0 else road.lane_count(d) - 1)
 				else:
-					target_x = road.center_x(d) + sh["side"] * (hw + road.STRIP_W * 0.5)
+					target_x = road.center_x(d) + sh.side * (hw + road.STRIP_W * 0.5)
 		var err: float = target_x - p.position.x
 		var l := "p%d_left" % p.slot
 		var r := "p%d_right" % p.slot
@@ -324,6 +403,24 @@ var _fast_bad := 0
 var _overlaps := 0
 var _walls := 0
 var _police_near := 0
+var _narrow_ticks := 0
+var _narrow_slow := 0
+var _narrow_v := 0.0
+var _walls_narrow := 0   # walls (every lane blocked) ahead of a player on a road of two lanes or fewer
+
+
+## Time fast-gear players spend on roads with two lanes or fewer, and how much of it they are held
+## below 90% of top speed (by traffic): the road should leave room to pass at full speed.
+func _audit_narrow(world: World) -> void:
+	for p in world.players:
+		if p.state != PlayerCar.State.RACING or p.target_speed < PlayerCar.FAST_MAX:
+			continue
+		if world.road.lane_count(p.d()) > 2:
+			continue
+		_narrow_ticks += 1
+		_narrow_v += p.speed
+		if p.speed < PlayerCar.FAST_MAX * 0.9:
+			_narrow_slow += 1
 
 
 ## Counts (cumulatively) rival cars that leave the road, drive over obstacles, or are too fast.
@@ -336,7 +433,7 @@ func _audit_rivals(world: World) -> void:
 			if absf(o.d() - d) < o.hh + r.hh - 6.0 and absf(o.position.x - r.position.x) < o.hw + r.hw - 6.0:
 				_on_obstacle += 1
 				if _on_obstacle < 4:
-					print("   [audit] %s over %s: rival d=%.0f x=%.0f lane_pos=%.2f target=%d speed=%.0f blocked=%s free=%s | obstacle d=%.0f x=%.0f" % [r.kind, o.kind, d, r.position.x, r.lane_pos, r.target_lane, r.speed, r._blocked, r._free_x, o.d(), o.position.x])
+					print("   [audit] %s over %s: rival d=%.0f x=%.0f lane_pos=%.2f target=%d speed=%.0f blocked=%s free=%s | obstacle d=%.0f x=%.0f" % [r.kind, o.kind, d, r.position.x, r.lane_pos, r.target_lane, r.speed, r.is_blocked(), r.is_chasing(), o.d(), o.position.x])
 		if not CarDefs.FAST_KINDS.has(r.kind) and r.speed > CarDefs.SLOW_CAP + 1.0:
 			_fast_bad += 1
 		if r.chase != null and absf(r.d() - r.chase.d()) < 120.0:
@@ -349,7 +446,7 @@ func _audit_rivals(world: World) -> void:
 			if absf(a.d() - b.d()) < a.hh + b.hh - 3.0 and absf(a.position.x - b.position.x) < a.hw + b.hw - 3.0:
 				_overlaps += 1
 				if _overlaps <= 10:
-					print("   [overlap] %s(d=%.0f x=%.0f lp=%.2f tl=%d v=%.0f blk=%s free=%s) vs %s(d=%.0f x=%.0f lp=%.2f tl=%d v=%.0f blk=%s free=%s)" % [a.kind, a.d(), a.position.x, a.lane_pos, a.target_lane, a.speed, a._blocked, a._free_x, b.kind, b.d(), b.position.x, b.lane_pos, b.target_lane, b.speed, b._blocked, b._free_x])
+					print("   [overlap] %s(d=%.0f x=%.0f lp=%.2f tl=%d v=%.0f blk=%s free=%s) vs %s(d=%.0f x=%.0f lp=%.2f tl=%d v=%.0f blk=%s free=%s)" % [a.kind, a.d(), a.position.x, a.lane_pos, a.target_lane, a.speed, a.is_blocked(), a.is_chasing(), b.kind, b.d(), b.position.x, b.lane_pos, b.target_lane, b.speed, b.is_blocked(), b.is_chasing()])
 	# Stretches of road ahead of a player where every lane is blocked (no way through).
 	for p in world.players:
 		if p.state != PlayerCar.State.RACING:
@@ -368,6 +465,8 @@ func _audit_rivals(world: World) -> void:
 					used[world.road.nearest_lane(o.d(), o.position.x)] = true
 			if used.size() >= n and cars >= 2:
 				_walls += 1
+				if n <= 2:
+					_walls_narrow += 1
 				break
 			sd += 40.0
 
@@ -449,30 +548,30 @@ func _run_flow(scene: Node) -> void:
 			_pad_twin(int(act.get_slice(":", 1)))
 		elif act == "focus":
 			var fo := get_viewport().gui_get_focus_owner()
-			print("[flow] focus = ", str(fo.get("text")).get_slice("  ", 0) if fo else "<none>", "  mirrors=", InputManager._mirror.keys())
+			print("[flow] focus = ", str(fo.get("text")).get_slice("  ", 0) if fo else "<none>", "  mirrors=", InputManager.mirrored_pads())
 		elif act == "color":
-			print("[flow] screen=%s P1 color=%s (%s) easy=%s" % [scene.get("screen"), str(Game.players[0]["color"]), Game.COLORS[int(Game.players[0]["color"])]["name"], Game.players[0]["easy"]])
+			print("[flow] screen=%s P1 color=%s (%s) easy=%s" % [scene.get("screen"), str(Game.players[0].color), Game.COLORS[Game.players[0].color]["name"], Game.players[0].easy])
 		elif act.begins_with("call:"):
-			var o: OptionsScreen = scene._options
+			var o: OptionsScreen = scene.options_screen
 			match act.get_slice(":", 1):
 				"open_controls":
-					scene._show(4)
-					o._select_tab(1)
-				"cap_kb_left": o._start_capture("kb", "left")
-				"cap_pad_slow": o._start_capture("pad", "slow")
-				"cap_kb_fast": o._start_capture("kb", "fast")
+					scene.show_screen(4)
+					o.select_tab(1)
+				"cap_kb_left": o.start_capture("kb", "left")
+				"cap_pad_slow": o.start_capture("pad", "slow")
+				"cap_kb_fast": o.start_capture("kb", "fast")
 				"reset":
 					SaveManager.reset_controls(0)
-					o._refresh_cells()
+					o.refresh_cells()
 				"report":
 					var pr: Dictionary = SaveManager.controls[0]
-					var saved = JSON.parse_string(FileAccess.get_file_as_string(SaveManager.PATH))
+					var saved = JSON.parse_string(FileAccess.get_file_as_string(SaveManager.save_path))
 					print("[remap] kb left=%s fast=%s slow=%s  pad slow=%s | on disk: left=%s | other player kb left=%s fast=%s" % [InputManager.key_label(pr["kb"]["left"]), InputManager.key_label(pr["kb"]["fast"]), InputManager.key_label(pr["kb"]["slow"]), str(pr["pad"]["slow"]), str(saved["controls"][0]["kb"]["left"]), InputManager.key_label(SaveManager.controls[1]["kb"]["left"]), InputManager.key_label(SaveManager.controls[1]["kb"]["fast"])])
 		elif act.begins_with("shot:"):
 			_shot(act.get_slice(":", 1))
 		elif act == "say":
 			print("[flow] usable pads = ", InputManager.usable_pads(), " connected = ", Input.get_connected_joypads(), " tex=", load("res://assets/ui/panel_grey_dark.png"))
-			print("[flow] current scene = ", scene.name, "  screen=", scene.get("screen"), "  players active=", Game.active_slots(), " kb=", Game.players.map(func(p): return p["kb"]))
+			print("[flow] current scene = ", scene.name, "  screen=", scene.get("screen"), "  players active=", Game.active_slots(), " kb=", Game.players.map(func(p): return p.kb))
 
 
 func _kd(which: String, down: bool) -> void:

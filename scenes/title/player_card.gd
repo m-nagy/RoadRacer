@@ -20,8 +20,8 @@ func _ready() -> void:
 
 
 func refresh() -> void:
-	var cfg: Dictionary = Game.players[slot]
-	_sprite.material = Game.make_car_material(cfg["color"])
+	var cfg: PlayerSlot = Game.players[slot]
+	_sprite.material = Game.make_car_material(cfg.color)
 	queue_redraw()
 
 
@@ -90,15 +90,15 @@ func _legend_row(y: float, groups: Array) -> void:
 
 
 func _pad_style() -> String:
-	var dev: int = Game.players[slot]["device"]
+	var dev: int = Game.players[slot].device
 	return InputManager.pad_style(dev) if dev >= 0 else "xbox"
 
 
 ## Icon for one of this player's actions, from their saved profile.
 func _icons(action: String) -> Array:
-	var cfg: Dictionary = Game.players[slot]
+	var cfg: PlayerSlot = Game.players[slot]
 	var lab := InputManager.label(slot, action)
-	if cfg["kb"]:
+	if cfg.kb:
 		return ["key", lab]
 	match lab:
 		"A", "B", "X", "Y": return ["btn", lab]
@@ -108,16 +108,16 @@ func _icons(action: String) -> Array:
 
 
 func _draw() -> void:
-	var cfg: Dictionary = Game.players[slot]
+	var cfg: PlayerSlot = Game.players[slot]
 	draw_style_box(_bg, Rect2(Vector2.ZERO, size))
 	var pcol := Color("ff6a5a") if slot == 0 else Color("5ab0ff")
 	_centered(44, "PLAYER %d" % (slot + 1), 40, pcol)
-	_centered(80, "Keyboard" if cfg["kb"] else ("PlayStation gamepad" if _pad_style() == "ps" else "Gamepad"), 20, Color(1, 1, 1, 0.75))
+	_centered(80, "Keyboard" if cfg.kb else ("PlayStation gamepad" if _pad_style() == "ps" else "Gamepad"), 20, Color(1, 1, 1, 0.75))
 
 	# Colour name with arrows, and swatches
-	var c: Dictionary = Game.COLORS[cfg["color"]]
+	var c: Dictionary = Game.COLORS[cfg.color]
 	var ay := 296.0
-	_centered(ay, c["name"].to_upper(), 34, Game.swatch(cfg["color"]).lightened(0.15))
+	_centered(ay, c["name"].to_upper(), 34, Game.swatch(cfg.color).lightened(0.15))
 	var nw := _font.get_string_size(c["name"].to_upper(), HORIZONTAL_ALIGNMENT_LEFT, -1, 34).x
 	var blink := int(_t * 3.0) % 2 == 0
 	_draw_icon(_icons("left"), Vector2(size.x * 0.5 - nw * 0.5 - 34, ay), blink)
@@ -126,23 +126,23 @@ func _draw() -> void:
 	var sx := size.x * 0.5 - (n - 1) * 20.0
 	for i in n:
 		var p := Vector2(sx + i * 40.0, ay + 36)
-		draw_circle(p, 13 if i == cfg["color"] else 9, Color.BLACK)
-		draw_circle(p, 11 if i == cfg["color"] else 7, Game.swatch(i))
+		draw_circle(p, 13 if i == cfg.color else 9, Color.BLACK)
+		draw_circle(p, 11 if i == cfg.color else 7, Game.swatch(i))
 
 	# Steering mode
-	var auto: bool = cfg["easy"]
+	var auto: bool = cfg.easy
 	var lbl := "AUTO-STEER: press one button, the car steers itself" if auto else "MANUAL: you steer the car"
 	_centered(372, lbl, 20, Color("9be6ff") if auto else Color("ffe9b0"))
 
 	# What each button does on THIS screen
 	draw_rect(Rect2(18, 392, size.x - 36, 98), Color(0, 0, 0, 0.32))
-	if cfg["ready"]:
+	if cfg.ready:
 		_centered(430, "READY!", 40, Color("6dff7a"))
 		_legend_row(472, [[[_icons("fast")], "not ready yet"]])
 	else:
 		_legend_row(414, [[[_icons("left"), _icons("right")], "CHANGE CAR COLOUR"]])
 		_legend_row(447, [[[_icons("up"), _icons("down")], "CHANGE STEERING MODE"]])
 		var groups := [[[_icons("slow")], "READY"]]
-		if cfg["kb"]:
+		if cfg.kb:
 			groups.append([[["key", "Enter"]], "START NOW"])
 		_legend_row(480, groups)

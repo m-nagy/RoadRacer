@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="StageVariant" format=3]
+
+[ext_resource type="Resource" path="res://data/stages/stage5.tres" id="1_j2r4n"]
+[ext_resource type="Script" path="res://data/stage_variant.gd" id="2_8dhy5"]
+[ext_resource type="Resource" path="res://data/weather/blizzard.tres" id="3_p2q1r"]
+
+[resource]
+script = ExtResource("2_8dhy5")
+id = "blizzard_snow"
+name = "Blizzard Pass"
+base = ExtResource("1_j2r4n")
+weather = ExtResource("3_p2q1r")
+time_of_day = "day"
+rng_seed = 1505
+v_slow = 292.0
+v_fast = 356.0

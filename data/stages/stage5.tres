@@ -1,0 +1,79 @@
+[gd_resource type="Resource" script_class="StageData" format=3]
+
+[ext_resource type="Script" path="res://data/curve_wave.gd" id="1_h57n8"]
+[ext_resource type="Script" path="res://data/lane_section.gd" id="2_kbdgb"]
+[ext_resource type="Script" path="res://data/obstacle_data.gd" id="3_5mgat"]
+[ext_resource type="Script" path="res://data/stage_data.gd" id="4_033ch"]
+[ext_resource type="Script" path="res://data/shortcut_data.gd" id="5_ogw4u"]
+[ext_resource type="Script" path="res://data/traffic_data.gd" id="6_sj777"]
+[ext_resource type="Resource" path="res://data/weather/snow.tres" id="w_snow"]
+
+[sub_resource type="Resource" id="Resource_onjvv"]
+script = ExtResource("1_h57n8")
+amplitude = 160.0
+period = 3400.0
+
+[sub_resource type="Resource" id="Resource_27m8r"]
+script = ExtResource("1_h57n8")
+amplitude = 60.0
+period = 1500.0
+
+[sub_resource type="Resource" id="Resource_2uogx"]
+script = ExtResource("2_kbdgb")
+lanes = 3
+
+[sub_resource type="Resource" id="Resource_1m6bu"]
+script = ExtResource("2_kbdgb")
+at = 0.4
+lanes = 2
+
+[sub_resource type="Resource" id="Resource_frbke"]
+script = ExtResource("2_kbdgb")
+at = 0.6
+lanes = 3
+
+[sub_resource type="Resource" id="Resource_6xlcw"]
+script = ExtResource("3_5mgat")
+density = 1.0
+kinds = Array[String](["snowbank", "cone", "barrel"])
+
+[sub_resource type="Resource" id="Resource_avngn"]
+script = ExtResource("5_ogw4u")
+at = 0.3
+skip = 6000.0
+hidden = true
+
+[sub_resource type="Resource" id="Resource_bfall"]
+script = ExtResource("5_ogw4u")
+at = 0.7
+skip = 5200.0
+hidden = true
+side = -1
+
+[sub_resource type="Resource" id="Resource_cfhno"]
+script = ExtResource("6_sj777")
+density = 1.7
+speed = 1.15
+kinds = Array[String](["van", "pickup", "viper", "police", "truck", "ambulance"])
+weights = Array[float]([2.0, 2.0, 3.0, 3.0, 3.0, 1.0])
+
+[resource]
+script = ExtResource("4_033ch")
+name = "Snowy Mountains"
+id = "snow"
+rng_seed = 39608
+theme = "snow"
+weather = ExtResource("w_snow")
+length = 110000.0
+lanes = Array[ExtResource("2_kbdgb")]([SubResource("Resource_2uogx"), SubResource("Resource_1m6bu"), SubResource("Resource_frbke")])
+curve = Array[ExtResource("1_h57n8")]([SubResource("Resource_onjvv"), SubResource("Resource_27m8r")])
+ground = Color(0.9137255, 0.94509804, 0.96862745, 1)
+ground2 = Color(0.8352941, 0.8901961, 0.93333334, 1)
+asphalt = Color(0.29411766, 0.30980393, 0.34509805, 1)
+curb = Color(0.827451, 0.22745098, 0.22745098, 1)
+traffic = SubResource("Resource_cfhno")
+obstacles = SubResource("Resource_6xlcw")
+fuel = 0.9
+v_slow = 302.0
+v_fast = 433.0
+shortcuts = Array[ExtResource("5_ogw4u")]([SubResource("Resource_avngn"), SubResource("Resource_bfall")])

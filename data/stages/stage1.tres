@@ -1,0 +1,57 @@
+[gd_resource type="Resource" script_class="StageData" format=3]
+
+[ext_resource type="Script" path="res://data/curve_wave.gd" id="1_5sa5g"]
+[ext_resource type="Script" path="res://data/lane_section.gd" id="2_2euu0"]
+[ext_resource type="Script" path="res://data/obstacle_data.gd" id="3_wvaey"]
+[ext_resource type="Script" path="res://data/stage_data.gd" id="4_ivf0u"]
+[ext_resource type="Script" path="res://data/shortcut_data.gd" id="5_lw6or"]
+[ext_resource type="Script" path="res://data/traffic_data.gd" id="6_455ic"]
+[ext_resource type="Resource" path="res://data/weather/none.tres" id="w_none"]
+
+[sub_resource type="Resource" id="Resource_kcxmc"]
+script = ExtResource("1_5sa5g")
+period = 4200.0
+
+[sub_resource type="Resource" id="Resource_oah3i"]
+script = ExtResource("1_5sa5g")
+amplitude = 40.0
+period = 1700.0
+
+[sub_resource type="Resource" id="Resource_ntlvh"]
+script = ExtResource("2_2euu0")
+
+[sub_resource type="Resource" id="Resource_4kayx"]
+script = ExtResource("3_wvaey")
+density = 0.3
+kinds = Array[String](["cone"])
+
+[sub_resource type="Resource" id="Resource_4rclw"]
+script = ExtResource("5_lw6or")
+at = 0.45
+skip = 4800.0
+
+[sub_resource type="Resource" id="Resource_ufgxt"]
+script = ExtResource("6_455ic")
+density = 0.9
+speed = 0.8
+kinds = Array[String](["taxi", "van", "pickup", "viper"])
+weights = Array[float]([4.0, 3.0, 1.0, 1.0])
+
+[resource]
+script = ExtResource("4_ivf0u")
+name = "City Centre"
+id = "city"
+rng_seed = 7932
+weather = ExtResource("w_none")
+lanes = Array[ExtResource("2_2euu0")]([SubResource("Resource_ntlvh")])
+curve = Array[ExtResource("1_5sa5g")]([SubResource("Resource_kcxmc"), SubResource("Resource_oah3i")])
+ground = Color(0.41960785, 0.44705883, 0.5019608, 1)
+ground2 = Color(0.35686275, 0.38431373, 0.4392157, 1)
+asphalt = Color(0.23921569, 0.24705882, 0.27058825, 1)
+curb = Color(0.8392157, 0.8392157, 0.8392157, 1)
+traffic = SubResource("Resource_ufgxt")
+obstacles = SubResource("Resource_4kayx")
+fuel = 1.1
+v_slow = 297.0
+v_fast = 401.0
+shortcuts = Array[ExtResource("5_lw6or")]([SubResource("Resource_4rclw")])

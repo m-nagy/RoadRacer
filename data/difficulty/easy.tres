@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="DifficultyLevel" format=3]
+
+[ext_resource type="Script" path="res://data/difficulty_level.gd" id="1_mi1vg"]
+
+[resource]
+script = ExtResource("1_mi1vg")
+label = "Easy"
+allow = 10
+fuel_spacing = 3500.0
+attack = 0.4
+obstacles = 0.6
+speed_mix = 0.0

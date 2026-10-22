@@ -12,134 +12,69 @@ const DIFF_TEXT := {
 	"hard": "HARD: little fuel, many obstacles, cars that block your way. A clean race - no crashes - is needed to finish.",
 }
 
-var _tab_game: Button
-var _tab_controls: Button
-var _game_box: Control
-var _controls_box: Control
 var _diff_buttons: Dictionary = {}
-var _diff_label: Label
-var _fs_button: Button
+
+@onready var _tab_game: Button = %TabGame
+@onready var _tab_controls: Button = %TabControls
+@onready var _game_box: Control = %GameBox
+@onready var _controls_box: Control = %ControlsBox
+@onready var _diff_label: Label = %DifficultyText
+@onready var _fs_button: Button = %FullscreenButton
+@onready var _gfx_button: Button = %GraphicsButton
+@onready var _capture_label: Label = %CaptureLabel
+@onready var _test_label: Label = %MonitorText
+@onready var _grid: GridContainer = %ControlsGrid
 var _profile := 0
 var _profile_buttons: Array = []
 var _cells: Dictionary = {}   # "kb:left" -> Button
-var _capture_label: Label
 var _capturing := {}
 var _capture_t := 0.0
-var _test_label: Label
 var _test_t := 0.0
 var _first_focus: Control
 
 
 func _ready() -> void:
-	mouse_filter = Control.MOUSE_FILTER_IGNORE
-	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	var cc := CenterContainer.new()
-	cc.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	cc.offset_top = 150
-	cc.offset_bottom = -52
-	add_child(cc)
-	var root := VBoxContainer.new()
-	root.add_theme_constant_override("separation", 8)
-	cc.add_child(root)
-
-	var tabs := HBoxContainer.new()
-	tabs.add_theme_constant_override("separation", 16)
-	tabs.alignment = BoxContainer.ALIGNMENT_CENTER
-	root.add_child(tabs)
-	_tab_game = _button(tabs, "Game Settings", func(): _select_tab(0), Vector2(300, 56))
-	_tab_controls = _button(tabs, "Controls", func(): _select_tab(1), Vector2(300, 56))
-
-	_game_box = _build_game()
-	root.add_child(_game_box)
-	_controls_box = _build_controls()
-	root.add_child(_controls_box)
-
-	_capture_label = Label.new()
-	_capture_label.add_theme_font_size_override("font_size", 34)
-	_capture_label.add_theme_color_override("font_color", Color("ffe36e"))
-	_capture_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_capture_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_capture_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	_capture_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_capture_label.visible = false
-	add_child(_capture_label)
-	_select_tab(0, false)
-
-
-func _button(parent: Control, text: String, cb: Callable, min_size := Vector2(0, 52)) -> Button:
-	var b := Button.new()
-	b.text = text
-	b.custom_minimum_size = min_size
-	b.add_theme_font_size_override("font_size", 26)
-	b.pressed.connect(cb)
-	b.focus_entered.connect(func(): AudioManager.play("blip", -8.0))
-	parent.add_child(b)
-	return b
-
-
-func _label(parent: Control, text: String, size := 24, col := Color.WHITE) -> Label:
-	var l := Label.new()
-	l.text = text
-	l.add_theme_font_size_override("font_size", size)
-	l.add_theme_color_override("font_color", col)
-	parent.add_child(l)
-	return l
-
-
-# ------------------------------------------------------------ game settings tab
-
-func _build_game() -> Control:
-	var box := VBoxContainer.new()
-	box.custom_minimum_size = Vector2(860, 0)
-	box.add_theme_constant_override("separation", 12)
-	_label(box, "Difficulty", 30, Color("ffd7a0"))
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 14)
-	box.add_child(row)
-	for d in ["easy", "normal", "hard"]:
-		var key: String = d
-		var b := _button(row, "", func(): _set_difficulty(key), Vector2(270, 62))
-		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		_diff_buttons[key] = b
-	_diff_label = _label(box, "", 22, Color("c8e6ff"))
-	_diff_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_diff_label.custom_minimum_size = Vector2(860, 64)
-
-	_slider_row(box, "Music volume", SaveManager.music_volume, func(v):
+	_tab_game.pressed.connect(select_tab.bind(0))
+	_tab_controls.pressed.connect(select_tab.bind(1))
+	_diff_buttons = {"easy": %EasyButton, "normal": %NormalButton, "hard": %HardButton}
+	for key in _diff_buttons:
+		_diff_buttons[key].pressed.connect(_set_difficulty.bind(key))
+	_setup_slider(%MusicSlider, %MusicPercent, SaveManager.music_volume, func(v):
 		SaveManager.music_volume = v
 		AudioManager.apply_volumes()
 		SaveManager.save())
-	_slider_row(box, "Sound effects", SaveManager.sfx_volume, func(v):
+	_setup_slider(%SfxSlider, %SfxPercent, SaveManager.sfx_volume, func(v):
 		SaveManager.sfx_volume = v
 		AudioManager.apply_volumes()
 		SaveManager.save()
 		AudioManager.play("select"))
-	_fs_button = _button(box, "", func():
+	_fs_button.pressed.connect(func():
 		Game.set_fullscreen(not Game.is_fullscreen())
-		_update_labels(), Vector2(0, 56))
-	var back_btn := _button(box, "Back", func(): back.emit(), Vector2(0, 56))
-	back_btn.name = "BackGame"
-	return box
+		_update_labels())
+	_gfx_button.pressed.connect(func():
+		SaveManager.graphics = "normal" if SaveManager.graphics == "low" else "low"
+		SaveManager.save()
+		AudioManager.play("select")
+		_update_labels())
+	_game_box.get_node("BackGame").pressed.connect(func(): back.emit())
+	_build_controls()
+	select_tab(0, false)
+	_play_blip_on_focus(self)
 
 
-func _slider_row(parent: Control, text: String, value: float, cb: Callable) -> void:
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 16)
-	parent.add_child(row)
-	var l := _label(row, text, 26)
-	l.custom_minimum_size = Vector2(260, 0)
-	var s := HSlider.new()
-	s.min_value = 0.0
-	s.max_value = 1.0
-	s.step = 0.05
-	s.value = value
-	s.custom_minimum_size = Vector2(420, 40)
-	s.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	s.focus_mode = Control.FOCUS_ALL
-	s.value_changed.connect(cb)
-	row.add_child(s)
-	var pct := _label(row, "%d%%" % int(value * 100), 24)
-	s.value_changed.connect(func(v): pct.text = "%d%%" % int(v * 100))
+## Every button makes a small sound when it gets the focus.
+func _play_blip_on_focus(node: Node) -> void:
+	for c in node.get_children():
+		if c is Button:
+			c.focus_entered.connect(func(): AudioManager.play("blip", -8.0))
+		_play_blip_on_focus(c)
+
+
+func _setup_slider(slider: HSlider, percent: Label, value: float, cb: Callable) -> void:
+	slider.value = value
+	percent.text = "%d%%" % int(value * 100)
+	slider.value_changed.connect(cb)
+	slider.value_changed.connect(func(v): percent.text = "%d%%" % int(v * 100))
 
 
 func _set_difficulty(d: String) -> void:
@@ -156,71 +91,49 @@ func _update_labels() -> void:
 		b.text = mark + String(d).capitalize()
 	_diff_label.text = DIFF_TEXT[SaveManager.difficulty]
 	_fs_button.text = "Full screen:  %s   (F11)" % ("ON" if Game.is_fullscreen() else "OFF")
+	_gfx_button.text = "Graphics:  %s" % ("Low (faster)" if Game.is_low_graphics() else "Normal")
 
 
 # ------------------------------------------------------------ controls tab
 
-func _build_controls() -> Control:
-	var box := HBoxContainer.new()
-	box.add_theme_constant_override("separation", 24)
-	var left := VBoxContainer.new()
-	left.add_theme_constant_override("separation", 8)
-	box.add_child(left)
-
-	var prow := HBoxContainer.new()
-	prow.add_theme_constant_override("separation", 12)
-	left.add_child(prow)
+func _build_controls() -> void:
+	var prow: HBoxContainer = _controls_box.get_node("Left/ProfileRow")
 	for i in 2:
-		var idx := i
-		var b := _button(prow, "Player %d" % (i + 1), func(): _select_profile(idx), Vector2(190, 44))
-		b.add_theme_font_size_override("font_size", 22)
+		var b: Button = prow.get_node("Player%d" % (i + 1))
 		UiTheme.compact(b, 40)
+		b.pressed.connect(_select_profile.bind(i))
 		_profile_buttons.append(b)
-	var rb := _button(prow, "Reset defaults", func():
-		SaveManager.reset_controls(_profile)
-		_refresh_cells(), Vector2(210, 44))
-	rb.add_theme_font_size_override("font_size", 22)
+	var rb: Button = prow.get_node("ResetButton")
 	UiTheme.compact(rb, 40)
-	var bb := _button(prow, "Back", func(): back.emit(), Vector2(130, 44))
-	bb.add_theme_font_size_override("font_size", 22)
+	rb.pressed.connect(func():
+		SaveManager.reset_controls(_profile)
+		refresh_cells())
+	var bb: Button = prow.get_node("BackControls")
 	UiTheme.compact(bb, 40)
-	bb.name = "BackControls"
-
-	var grid := GridContainer.new()
-	grid.columns = 3
-	grid.add_theme_constant_override("h_separation", 12)
-	grid.add_theme_constant_override("v_separation", 3)
-	left.add_child(grid)
-	_label(grid, "Action", 22, Color("ffd7a0")).custom_minimum_size = Vector2(190, 0)
-	_label(grid, "Keyboard", 22, Color("ffd7a0")).custom_minimum_size = Vector2(190, 0)
-	_label(grid, "Gamepad", 22, Color("ffd7a0")).custom_minimum_size = Vector2(250, 0)
+	bb.pressed.connect(func(): back.emit())
+	# One row per action: its name, the keyboard key and the gamepad button.
 	for a in InputManager.ACTIONS:
 		var act: String = a
-		_label(grid, InputManager.ACTION_NAMES[act], 22)
-		_cells["kb:" + act] = _button(grid, "", func(): _start_capture("kb", act), Vector2(190, 36))
-		_cells["pad:" + act] = _button(grid, "", func(): _start_capture("pad", act), Vector2(250, 36))
-		_cells["kb:" + act].add_theme_font_size_override("font_size", 22)
-		_cells["pad:" + act].add_theme_font_size_override("font_size", 22)
-		UiTheme.compact(_cells["kb:" + act])
-		UiTheme.compact(_cells["pad:" + act])
-
-	# Live controller monitor: shows exactly what each connected pad reports.
-	var right := VBoxContainer.new()
-	right.custom_minimum_size = Vector2(380, 0)
-	box.add_child(right)
-	_label(right, "Controller monitor", 22, Color("ffd7a0"))
-	_test_label = _label(right, "", 16, Color("d8e4f0"))
-	_test_label.autowrap_mode = TextServer.AUTOWRAP_ARBITRARY
-	_test_label.custom_minimum_size = Vector2(380, 340)
-	return box
+		var name_label := Label.new()
+		name_label.text = InputManager.ACTION_NAMES[act]
+		name_label.add_theme_font_size_override("font_size", 22)
+		_grid.add_child(name_label)
+		for kind in ["kb", "pad"]:
+			var cell := Button.new()
+			cell.custom_minimum_size = Vector2(190 if kind == "kb" else 250, 36)
+			cell.add_theme_font_size_override("font_size", 22)
+			UiTheme.compact(cell)
+			cell.pressed.connect(start_capture.bind(kind, act))
+			_grid.add_child(cell)
+			_cells["%s:%s" % [kind, act]] = cell
 
 
 func _select_profile(i: int) -> void:
 	_profile = i
-	_refresh_cells()
+	refresh_cells()
 
 
-func _refresh_cells() -> void:
+func refresh_cells() -> void:
 	for i in _profile_buttons.size():
 		_profile_buttons[i].text = ("● " if i == _profile else "○ ") + "Player %d" % (i + 1)
 	var prof: Dictionary = SaveManager.controls[_profile]
@@ -232,7 +145,7 @@ func _refresh_cells() -> void:
 		_cells["pad:" + a].text = " / ".join(names) if not names.is_empty() else "-"
 
 
-func _start_capture(kind: String, action: String) -> void:
+func start_capture(kind: String, action: String) -> void:
 	_capturing = {"kind": kind, "action": action}
 	_capture_t = 0.0
 	_capture_label.visible = true
@@ -243,7 +156,7 @@ func _start_capture(kind: String, action: String) -> void:
 func _end_capture(msg := "") -> void:
 	_capturing = {}
 	_capture_label.visible = false
-	_refresh_cells()
+	refresh_cells()
 	if msg != "":
 		AudioManager.play("select", -6.0)
 
@@ -308,13 +221,13 @@ func _input(event: InputEvent) -> void:
 		back.emit()
 
 
-func _select_tab(i: int, focus := true) -> void:
+func select_tab(i: int, focus := true) -> void:
 	_game_box.visible = i == 0
 	_controls_box.visible = i == 1
 	_tab_game.text = ("● " if i == 0 else "○ ") + "Game Settings"
 	_tab_controls.text = ("● " if i == 1 else "○ ") + "Controls"
 	_update_labels()
-	_refresh_cells()
+	refresh_cells()
 	if focus:
 		(_tab_game if i == 0 else _tab_controls).call_deferred("grab_focus")
 
@@ -322,7 +235,7 @@ func _select_tab(i: int, focus := true) -> void:
 func open() -> void:
 	visible = true
 	InputManager.freeze_held()
-	_select_tab(0, false)
+	select_tab(0, false)
 	_capturing = {}
 	_capture_label.visible = false
 	_tab_game.call_deferred("grab_focus")

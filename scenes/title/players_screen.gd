@@ -12,7 +12,7 @@ signal back
 
 const COL_X := {-1: 260.0, 0: 640.0, 1: 1020.0}
 
-var _devices: Array = []   # {id, kind, dev, pos, x, y, shake}
+var devices: Array = []   # {id, kind, dev, pos, x, y, shake}
 var _font: Font = ThemeDB.fallback_font
 var _t := 0.0
 var _msg := ""
@@ -34,7 +34,7 @@ func open() -> void:
 
 func _refresh_devices() -> void:
 	var keep := {}
-	for d in _devices:
+	for d in devices:
 		keep[d["id"]] = d
 	var list: Array = []
 	for k in 2:
@@ -50,11 +50,11 @@ func _refresh_devices() -> void:
 			d["y"] = 0.0
 			d["shake"] = 0.0
 		out.append(d)
-	_devices = out
+	devices = out
 
 
 func _slot_device(side: int) -> Dictionary:
-	for d in _devices:
+	for d in devices:
 		if d["pos"] == side:
 			return d
 	return {}
@@ -85,7 +85,7 @@ func _input(event: InputEvent) -> void:
 		return   # the same press from a mirrored (virtual) gamepad
 	if event is InputEventKey and event.pressed and not event.echo:
 		var k: int = event.physical_keycode
-		for d in _devices:
+		for d in devices:
 			if d["kind"] != "kb":
 				continue
 			var lk := KEY_A if d["kb"] == 0 else KEY_LEFT
@@ -113,17 +113,17 @@ func _continue() -> void:
 		return
 	for slot in 2:
 		var d := _slot_device(-1 if slot == 0 else 1)
-		var p: Dictionary = Game.players[slot]
-		p["ready"] = false
+		var p: PlayerSlot = Game.players[slot]
+		p.ready = false
 		if d.is_empty():
-			p["active"] = false
-			p["device"] = -1
-			p["kb"] = false
+			p.active = false
+			p.device = -1
+			p.kb = false
 			InputManager.rebuild(slot)
 			continue
-		p["active"] = true
-		p["color"] = SaveManager.prefs[slot]["color"]
-		p["easy"] = SaveManager.prefs[slot]["easy"]
+		p.active = true
+		p.color = SaveManager.prefs[slot]["color"]
+		p.easy = SaveManager.prefs[slot]["easy"]
 		if d["kind"] == "kb":
 			InputManager.assign_keyboard(slot)
 		else:
@@ -137,7 +137,7 @@ func _process(delta: float) -> void:
 		return
 	_t += delta
 	_msg_t = maxf(0.0, _msg_t - delta)
-	for d in _devices:
+	for d in devices:
 		if d["kind"] == "pad":
 			if InputManager.pad_just(d["dev"], "left"):
 				_move(d, -1)
@@ -148,7 +148,7 @@ func _process(delta: float) -> void:
 		# side icons sit in their panel at full size.
 		var idx := 0
 		var n_mid := 0
-		for e in _devices:
+		for e in devices:
 			if e == d:
 				idx = n_mid
 			if e["pos"] == 0:
@@ -202,7 +202,7 @@ func _draw() -> void:
 			_text(Vector2(COL_X[side], 410.0), "move a controller here", 20, Color(1, 1, 1, 0.45))
 	# Middle column
 	_text(Vector2(640, 222.0), "WHO PLAYS?", 30, Color("ffe9b0"))
-	for d in _devices:
+	for d in devices:
 		var c := Vector2(d["x"] + sin(_t * 60.0) * d["shake"] * 10.0, d["y"])
 		var k: float = d.get("k", 1.0)
 		if d["pos"] == 0:

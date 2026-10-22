@@ -1,0 +1,12 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scenes/title/stage_button.gd" id="1_btn"]
+
+[node name="StageButton" type="Button"]
+custom_minimum_size = Vector2(360, 120)
+offset_right = 360.0
+offset_bottom = 120.0
+theme_override_font_sizes/font_size = 26
+text = "1. Stage"
+clip_text = true
+script = ExtResource("1_btn")

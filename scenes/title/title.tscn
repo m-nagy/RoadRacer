@@ -1,10 +1,141 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=8 format=3]
 
 [ext_resource type="Script" path="res://scenes/title/title.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/ui/banner_hanging.png" id="2_banner"]
+[ext_resource type="PackedScene" path="res://scenes/title/stage_select.tscn" id="3_stages"]
+[ext_resource type="PackedScene" path="res://scenes/title/options_screen.tscn" id="4_options"]
+[ext_resource type="Script" path="res://scenes/title/players_screen.gd" id="5_players"]
+[ext_resource type="Script" path="res://scenes/title/car_screen.gd" id="6_cars"]
 
 [node name="Title" type="Control"]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 script = ExtResource("1")
+
+[node name="BgLayer" type="Node2D" parent="."]
+unique_name_in_owner = true
+
+[node name="Banner" type="TextureRect" parent="."]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -300.0
+offset_top = 6.0
+offset_right = 300.0
+offset_bottom = 156.0
+grow_horizontal = 2
+texture = ExtResource("2_banner")
+stretch_mode = 0
+
+[node name="TitleLabel" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -300.0
+offset_top = 14.0
+offset_right = 300.0
+offset_bottom = 124.0
+grow_horizontal = 2
+theme_override_constants/outline_size = 12
+theme_override_font_sizes/font_size = 64
+text = "ROAD RACER"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Hint" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -44.0
+offset_bottom = -8.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_font_sizes/font_size = 22
+horizontal_alignment = 1
+
+[node name="MenuCenter" type="CenterContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = 165.0
+offset_bottom = -52.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="MenuBox" type="VBoxContainer" parent="MenuCenter"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Continue" type="Button" parent="MenuCenter/MenuBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(620, 64)
+layout_mode = 2
+
+[node name="NewGame" type="Button" parent="MenuCenter/MenuBox"]
+custom_minimum_size = Vector2(620, 64)
+layout_mode = 2
+text = "New Game  -  from Stage 1"
+
+[node name="StageSelectButton" type="Button" parent="MenuCenter/MenuBox"]
+custom_minimum_size = Vector2(620, 64)
+layout_mode = 2
+text = "Stage Select"
+
+[node name="OptionsButton" type="Button" parent="MenuCenter/MenuBox"]
+custom_minimum_size = Vector2(620, 64)
+layout_mode = 2
+text = "Options"
+
+[node name="Fullscreen" type="Button" parent="MenuCenter/MenuBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(620, 64)
+layout_mode = 2
+
+[node name="Quit" type="Button" parent="MenuCenter/MenuBox"]
+custom_minimum_size = Vector2(620, 64)
+layout_mode = 2
+text = "Quit"
+
+[node name="StageSelect" parent="." instance=ExtResource("3_stages")]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+
+[node name="PlayersScreen" type="Control" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("5_players")
+
+[node name="CarScreen" type="Control" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("6_cars")
+
+[node name="OptionsScreen" parent="." instance=ExtResource("4_options")]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1

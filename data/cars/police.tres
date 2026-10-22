@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="CarKind" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/cars/police/1.png" id="1_35to4"]
+[ext_resource type="Texture2D" path="res://assets/cars/police/2.png" id="2_yfvqw"]
+[ext_resource type="Texture2D" path="res://assets/cars/police/3.png" id="3_kpr78"]
+[ext_resource type="Script" path="res://data/car_kind.gd" id="4_y4db1"]
+
+[resource]
+script = ExtResource("4_y4db1")
+texture = ExtResource("1_35to4")
+frames = Array[Texture2D]([ExtResource("1_35to4"), ExtResource("2_yfvqw"), ExtResource("3_kpr78")])
+speed = 500.0
+behavior = "rammer"

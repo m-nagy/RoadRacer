@@ -1,0 +1,83 @@
+[gd_resource type="Resource" script_class="StageData" format=3]
+
+[ext_resource type="Script" path="res://data/curve_wave.gd" id="1_7ctg7"]
+[ext_resource type="Script" path="res://data/lane_section.gd" id="2_2mcn0"]
+[ext_resource type="Script" path="res://data/obstacle_data.gd" id="3_8lgnl"]
+[ext_resource type="Script" path="res://data/stage_data.gd" id="4_tvnbb"]
+[ext_resource type="Script" path="res://data/shortcut_data.gd" id="5_oliyh"]
+[ext_resource type="Script" path="res://data/traffic_data.gd" id="6_jr6vq"]
+[ext_resource type="Resource" path="res://data/weather/rain.tres" id="w_rain"]
+
+[sub_resource type="Resource" id="Resource_8tilj"]
+script = ExtResource("1_7ctg7")
+amplitude = 150.0
+period = 3400.0
+
+[sub_resource type="Resource" id="Resource_w2b4b"]
+script = ExtResource("1_7ctg7")
+amplitude = 60.0
+period = 1500.0
+
+[sub_resource type="Resource" id="Resource_w3awm"]
+script = ExtResource("2_2mcn0")
+
+[sub_resource type="Resource" id="Resource_pmesl"]
+script = ExtResource("2_2mcn0")
+at = 0.3
+lanes = 3
+
+[sub_resource type="Resource" id="Resource_gp5gb"]
+script = ExtResource("2_2mcn0")
+at = 0.55
+
+[sub_resource type="Resource" id="Resource_m0vl8"]
+script = ExtResource("2_2mcn0")
+at = 0.8
+lanes = 2
+
+[sub_resource type="Resource" id="Resource_jvehw"]
+script = ExtResource("3_8lgnl")
+density = 1.2
+kinds = Array[String](["cone", "barrel", "oil", "tire"])
+
+[sub_resource type="Resource" id="Resource_hjrie"]
+script = ExtResource("5_oliyh")
+at = 0.25
+skip = 6400.0
+hidden = true
+side = -1
+
+[sub_resource type="Resource" id="Resource_u7x8p"]
+script = ExtResource("5_oliyh")
+at = 0.65
+skip = 5200.0
+hidden = true
+
+[sub_resource type="Resource" id="Resource_ank4v"]
+script = ExtResource("6_jr6vq")
+density = 2.0
+speed = 1.25
+kinds = Array[String](["taxi", "van", "pickup", "viper", "police", "truck", "ambulance"])
+weights = Array[float]([2.0, 1.0, 2.0, 4.0, 3.0, 2.0, 2.0])
+
+[resource]
+script = ExtResource("4_tvnbb")
+name = "Rainy Night City"
+id = "night_city"
+rng_seed = 47527
+theme = "night"
+weather = ExtResource("w_rain")
+night = true
+length = 120000.0
+lanes = Array[ExtResource("2_2mcn0")]([SubResource("Resource_w3awm"), SubResource("Resource_pmesl"), SubResource("Resource_gp5gb"), SubResource("Resource_m0vl8")])
+curve = Array[ExtResource("1_7ctg7")]([SubResource("Resource_8tilj"), SubResource("Resource_w2b4b")])
+ground = Color(0.16470589, 0.18431373, 0.23921569, 1)
+ground2 = Color(0.13725491, 0.15686275, 0.21568628, 1)
+asphalt = Color(0.18039216, 0.1882353, 0.21176471, 1)
+curb = Color(0.7882353, 0.7882353, 0.7882353, 1)
+traffic = SubResource("Resource_ank4v")
+obstacles = SubResource("Resource_jvehw")
+fuel = 0.85
+v_slow = 318.0
+v_fast = 449.0
+shortcuts = Array[ExtResource("5_oliyh")]([SubResource("Resource_hjrie"), SubResource("Resource_u7x8p")])

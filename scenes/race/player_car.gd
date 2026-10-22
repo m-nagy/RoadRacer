@@ -4,6 +4,12 @@ extends Node2D
 
 enum State { RACING, CRASHED, OUT, FINISHED }
 
+## The world listens to these and reacts (sounds, pop-ups, clearing room for a respawn).
+signal crashed(reason: String, impact_speed: float)
+signal respawned
+signal bumped
+signal oil_hit
+
 const SLOW_MAX := 360.0     # ~200 km/h
 const FAST_MAX := 720.0     # ~400 km/h
 const SLOW_ACCEL := 240.0
@@ -16,15 +22,16 @@ const BRAKE_CAP_DECEL := 700.0
 const EDGE_HW := 22.0       # visible half width/length of the body, used against the road edge
 const EDGE_HH := 47.0
 const EDGE_MARGIN := 5.0    # how far into the curb a corner may go before it counts as hitting the side
-const START_TIME := 100.0
+const START_TIME := 100.0   # default; a short stage starts with less (see Difficulty.time_budget)
 const CRASH_PENALTY := 5.0
 
 var slot := 0
 var easy := false
-var world: Node
+var world: World
 var state := State.RACING
 var speed := 0.0
 var vx := 0.0
+var start_time := START_TIME   # what the timer started at (the HUD fuel bar is relative to it)
 var time_left := START_TIME
 var score := 0.0
 var penalty := 0.0         # seconds of increased fuel consumption left
@@ -49,48 +56,29 @@ var braking := false        # brake lights on (auto-brake or the brake key)
 
 var _crash_t := 0.0
 var _last_d := 0.0
-var _sprite: Sprite2D
-var _light: PointLight2D
+@onready var _sprite: Sprite2D = $Sprite
+@onready var _light: PointLight2D = $Headlight
 var _wobble := 0.0
 var _super_visual := false
 
 
-func setup(w: Node, slot_idx: int, color_idx: int, easy_mode: bool, lane: int) -> void:
+func setup(w: World, slot_idx: int, color_idx: int, easy_mode: bool, lane: int) -> void:
 	world = w
 	slot = slot_idx
 	easy = easy_mode
-	grip = w.stage["grip"]
-	hw = CarDefs.PLAYER["hw"]
-	hh = CarDefs.PLAYER["hh"]
-	_sprite = Sprite2D.new()
-	_sprite.texture = load(CarDefs.PLAYER["tex"])
-	_sprite.scale = Vector2.ONE * CarDefs.PLAYER["scale"]
+	grip = w.stage.grip * w.stage.weather.grip
+	hw = CarDefs.PLAYER.hw
+	hh = CarDefs.PLAYER.hh
+	_sprite.texture = CarDefs.PLAYER.texture
+	_sprite.scale = Vector2.ONE * CarDefs.PLAYER.scale
 	_sprite.material = Game.make_car_material(color_idx)
-	add_child(_sprite)
 	if easy:
 		pilot = AutoPilot.new()
-		pilot._replan = slot_idx + 1  # stagger the two players' planning frames
+		pilot.set_stagger(slot_idx + 1)  # the two players plan on different ticks
 	position = Vector2(w.road.lane_x(60.0, lane), -60.0)
 	rotation = w.road.heading(60.0)
 	_last_d = 60.0
-	if w.stage["night"]:
-		_light = PointLight2D.new()
-		var g := GradientTexture2D.new()
-		g.fill = GradientTexture2D.FILL_RADIAL
-		g.fill_from = Vector2(0.5, 0.5)
-		g.fill_to = Vector2(1.0, 0.5)
-		g.width = 256
-		g.height = 256
-		var grad := Gradient.new()
-		grad.set_color(0, Color.WHITE)
-		grad.set_color(1, Color(1, 1, 1, 0))
-		g.gradient = grad
-		_light.texture = g
-		_light.texture_scale = 3.2
-		_light.position = Vector2(0, -170)
-		_light.energy = 1.1
-		_light.color = Color("fff1c4")
-		add_child(_light)
+	_light.visible = w.stage.night and not Game.is_low_graphics()   # headlights only in the dark, and not on Low
 
 
 ## Full-lock sideways speed at a forward speed.
@@ -140,7 +128,7 @@ func tick(dt: float, running: bool) -> void:
 			position.y -= speed * dt
 			# Roll on following the lane.
 			position.x = move_toward(position.x, road.lane_x(d(), road.nearest_lane(d(), position.x)), 240.0 * dt)
-			rotation = lerp_angle(rotation, road.heading(d()), 0.2)
+			rotation = lerp_angle(rotation, road.heading(d()), 1.0 - exp(-13.4 * dt))   # (same pace as 0.2 per tick at 60 Hz)
 			_sprite.rotation = 0.0
 			return
 
@@ -226,7 +214,7 @@ func tick(dt: float, running: bool) -> void:
 	if skid > 0.0 or oil_skid > 0.0:
 		_wobble += dt * 22.0
 		wob = sin(_wobble) * 0.3
-	_sprite.rotation = lerpf(_sprite.rotation, wob, 0.3)
+	_sprite.rotation = lerpf(_sprite.rotation, wob, 1.0 - exp(-21.4 * dt))
 	_sprite.visible = invuln <= 0.0 or int(invuln * 12.0) % 2 == 0
 
 	# --- road side: any corner of the body past the curb is a crash
@@ -270,11 +258,7 @@ func hits_road_side() -> bool:
 func crash(reason := "") -> void:
 	if state != State.RACING or super_t > 0.0:
 		return
-	if Autotest.enabled:
-		print("[crash] P%d d=%.0f v=%.0f x=%.0f road=%.0f reason=%s" % [slot + 1, d(), speed, position.x, world.road.center_x(d()), reason])
-		if pilot:
-			for h in pilot.history.slice(-14):
-				print("   ", h)
+	var impact_speed := speed
 	state = State.CRASHED
 	crashes += 1
 	_crash_t = 1.6
@@ -283,7 +267,7 @@ func crash(reason := "") -> void:
 	time_left = maxf(0.0, time_left - CRASH_PENALTY)
 	_sprite.visible = false
 	_sprite.rotation = 0.0
-	world.on_player_crash(self)
+	crashed.emit(reason, impact_speed)
 
 
 func _respawn() -> void:
@@ -305,8 +289,8 @@ func _respawn() -> void:
 	speed = 0.0
 	_sprite.visible = true
 	queue_redraw()
-	world.clear_area(dd - 160.0, dd + 450.0)
-	world.on_player_respawn(self)
+	reset_physics_interpolation()
+	respawned.emit()
 
 
 ## Brushed by another car without any penalty: just pushed aside.
@@ -326,7 +310,7 @@ func bump(push_dir: float, overlap: float) -> void:
 		# auto-steer is never shoved into the next hazard.)
 		vx = push_dir * 260.0
 		skid = 0.8
-	world.on_player_bump(self)
+	bumped.emit()
 
 
 func activate_super() -> void:
@@ -362,7 +346,7 @@ func hit_barrel() -> void:
 func hit_oil() -> void:
 	if oil_skid <= 0.0 and invuln <= 0.0:
 		oil_skid = 1.1
-		world.on_player_oil(self)
+		oil_hit.emit()
 
 
 func teleport_to(new_d: float) -> void:
@@ -373,6 +357,7 @@ func teleport_to(new_d: float) -> void:
 	_last_d = new_d
 	invuln = 1.5
 	vx = 0.0
+	reset_physics_interpolation()
 
 
 func finish() -> void:

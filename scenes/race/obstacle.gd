@@ -45,6 +45,7 @@ func setup(kind_name: String, pos: Vector2) -> void:
 			hw = 18.0; hh = 18.0
 	hw *= HIT
 	hh *= HIT
+	set_physics_process(false)   # nothing to simulate until the obstacle is knocked away
 	queue_redraw()
 
 
@@ -60,11 +61,10 @@ func fly(velocity: Vector2, spin: float, life: float) -> void:
 	_life = life
 	_age = 0.0
 	z_index = 5
+	set_physics_process(true)
 
 
-func _process(delta: float) -> void:
-	if not _flying:
-		return
+func _physics_process(delta: float) -> void:
 	_age += delta
 	position += _vel * delta
 	rotation += _spin * delta
@@ -75,7 +75,6 @@ func _process(delta: float) -> void:
 	if kind == "snowbank":
 		scale = Vector2.ONE * VIS * (1.0 + _age * 1.6)
 	modulate.a = clampf(1.0 - (_age / _life) * (_age / _life), 0.0, 1.0)
-	queue_redraw()
 
 
 func _ellipse(c: Vector2, rx: float, ry: float, col: Color, rot := 0.0) -> void:

@@ -17,12 +17,13 @@ config/icon="res://icon.png"
 
 [autoload]
 
-Game="*res://autoload/game.gd"
 SaveManager="*res://autoload/save_manager.gd"
+Game="*res://autoload/game.gd"
 InputManager="*res://autoload/input_manager.gd"
 Sfx="*res://autoload/sfx.gd"
 AudioManager="*res://autoload/audio_manager.gd"
 Autotest="*res://autoload/autotest.gd"
+SmokeTest="*res://autoload/smoke_test.gd"
 
 [display]
 
@@ -30,6 +31,10 @@ window/size/viewport_width=1280
 window/size/viewport_height=720
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
+
+[physics]
+
+common/physics_interpolation=true
 
 [rendering]
 
