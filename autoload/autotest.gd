@@ -320,12 +320,12 @@ func _drive_shortcut(world: World) -> void:
 		var d: float = p.d()
 		var target_x: float = road.lane_x(d, 1)
 		for sh in road.shortcuts:
-			if d > sh["d0"] - 600.0 and d < sh["d1"] + 50.0:
+			if d > sh.d0 - 600.0 and d < sh.d1 + 50.0:
 				var hw := road.half_width(d)
-				if d < sh["d0"] + 10.0:
-					target_x = road.lane_x(d, 0 if sh["side"] < 0 else road.lane_count(d) - 1)
+				if d < sh.d0 + 10.0:
+					target_x = road.lane_x(d, 0 if sh.side < 0 else road.lane_count(d) - 1)
 				else:
-					target_x = road.center_x(d) + sh["side"] * (hw + road.STRIP_W * 0.5)
+					target_x = road.center_x(d) + sh.side * (hw + road.STRIP_W * 0.5)
 		var err: float = target_x - p.position.x
 		var l := "p%d_left" % p.slot
 		var r := "p%d_right" % p.slot

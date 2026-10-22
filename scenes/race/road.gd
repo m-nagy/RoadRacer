@@ -17,7 +17,16 @@ var length := 0.0
 var theme := "city"
 var night := false
 var checkpoints: Array = []  # distances
-var shortcuts: Array = []    # {d0, d1, exit_d, side, hidden}
+## A side road that skips ahead: a strip beside the road from d0 to d1, ending in a tunnel.
+class ShortcutStrip:
+	var d0 := 0.0
+	var d1 := 0.0
+	var exit_d := 0.0   # where the player comes out
+	var side := 1       # -1 left of the road, 1 right
+	var hidden := false # hidden ones have no signs or markings
+
+
+var shortcuts: Array[ShortcutStrip] = []
 var view_ranges: Array = []  # Vector2(d_min, d_max)
 
 var _lanes: Array = []
@@ -41,7 +50,13 @@ func setup(stage_dict: Dictionary, rng_seed: int) -> void:
 	shortcuts.clear()
 	for s in stage["shortcuts"]:
 		var d0: float = length * s["at"]
-		shortcuts.append({"d0": d0, "d1": d0 + STRIP_LEN, "exit_d": d0 + s["skip"], "side": s["side"], "hidden": s["hidden"]})
+		var sc := ShortcutStrip.new()
+		sc.d0 = d0
+		sc.d1 = d0 + STRIP_LEN
+		sc.exit_d = d0 + s["skip"]
+		sc.side = s["side"]
+		sc.hidden = s["hidden"]
+		shortcuts.append(sc)
 	_generate_decor(rng_seed)
 	for l in RoadChunk.Layer.size():
 		var layer_node := Node2D.new()
@@ -125,10 +140,10 @@ func nearest_lane(d: float, x: float) -> int:
 ## Index of the shortcut strip containing this point, or -1.
 func strip_at(x: float, d: float) -> int:
 	for i in shortcuts.size():
-		var s: Dictionary = shortcuts[i]
-		if d >= s["d0"] and d <= s["d1"] + 60.0:  # includes the tunnel mouth
+		var s := shortcuts[i]
+		if d >= s.d0 and d <= s.d1 + 60.0:  # includes the tunnel mouth
 			var hw := half_width(d)
-			var rel := (x - center_x(d)) * float(s["side"])
+			var rel := (x - center_x(d)) * float(s.side)
 			if rel >= hw - 4.0 and rel <= hw + STRIP_W:
 				return i
 	return -1
@@ -174,7 +189,7 @@ func first_decor(d_min: float) -> int:
 ## Is there a shortcut opening in the curb on this side at distance d?
 func gap_on_side(d: float, side: int) -> bool:
 	for s in shortcuts:
-		if s["side"] == side and d >= s["d0"] - GATE_GAP and d <= s["d1"] + GATE_GAP:
+		if s.side == side and d >= s.d0 - GATE_GAP and d <= s.d1 + GATE_GAP:
 			return true
 	return false
 

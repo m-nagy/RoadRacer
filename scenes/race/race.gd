@@ -6,7 +6,17 @@ const CAM_LEAD := 240.0
 const HUD_SCENE := preload("res://scenes/race/hud.tscn")
 
 var world: World
-var views: Array = []          # {slot, player, viewport, camera, hud, shake}
+## One player's window onto the shared world.
+class View:
+	var slot := 0
+	var player: PlayerCar
+	var viewport: SubViewport
+	var camera: Camera2D
+	var hud: Hud
+	var shake := 0.0
+
+
+var views: Array[View] = []
 var _label: Label
 var _menu: Control = null
 var _menu_kind := ""
@@ -59,7 +69,7 @@ func _ready() -> void:
 			vp.add_child(world)
 			world.setup(Game.stage_index)
 		else:
-			vp.world_2d = views[0]["viewport"].world_2d
+			vp.world_2d = views[0].viewport.world_2d
 		var cam := Camera2D.new()
 		cam.zoom = Vector2(ZOOM, ZOOM)
 		cam.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS   # follows the physics-tick positions
@@ -74,17 +84,22 @@ func _ready() -> void:
 		hud.stage_no = _stage_no
 		hud.stage_name = world.stage["name"]
 		wrap.add_child(hud)
-		views.append({"slot": slot, "viewport": vp, "camera": cam, "hud": hud, "shake": 0.0, "player": null})
+		var view := View.new()
+		view.slot = slot
+		view.viewport = vp
+		view.camera = cam
+		view.hud = hud
+		views.append(view)
 
 	for i in views.size():
-		var v: Dictionary = views[i]
-		var cfg: Dictionary = Game.players[v["slot"]]
+		var v := views[i]
+		var cfg: Dictionary = Game.players[v.slot]
 		var lane := 1 if views.size() == 1 else 1 + i
-		v["player"] = world.add_player(v["slot"], cfg["color"], cfg["easy"], lane)
-	var all_players: Array = views.map(func(v): return v["player"])
+		v.player = world.add_player(v.slot, cfg["color"], cfg["easy"], lane)
+	var all_players: Array = views.map(func(v): return v.player)
 	for v in views:
-		v["hud"].player = v["player"]
-		v["hud"].all_players = all_players
+		v.hud.player = v.player
+		v.hud.all_players = all_players
 
 	world.popup.connect(_on_popup)
 	world.shake.connect(_on_shake)
@@ -102,14 +117,14 @@ func _ready() -> void:
 
 	_update_cameras(0.0)
 	for v in views:
-		v["camera"].reset_physics_interpolation()
+		v.camera.reset_physics_interpolation()
 	_run_countdown()
 
 
 func _hud_for(slot: int) -> Hud:
 	for v in views:
-		if v["slot"] == slot:
-			return v["hud"]
+		if v.slot == slot:
+			return v.hud
 	return null
 
 
@@ -121,8 +136,8 @@ func _on_popup(slot: int, text: String, kind: String) -> void:
 
 func _on_shake(slot: int, strength: float) -> void:
 	for v in views:
-		if v["slot"] == slot:
-			v["shake"] = strength
+		if v.slot == slot:
+			v.shake = strength
 
 
 func _run_countdown() -> void:
@@ -153,7 +168,7 @@ func _physics_process(delta: float) -> void:
 	var out := 0
 	var active := 0
 	for v in views:
-		match v["player"].state:
+		match v.player.state:
 			PlayerCar.State.FINISHED:
 				finished += 1
 			PlayerCar.State.OUT:
@@ -175,17 +190,17 @@ func _physics_process(delta: float) -> void:
 func _update_cameras(delta: float) -> void:
 	var ranges := []
 	for v in views:
-		var p: PlayerCar = v["player"]
-		var cam: Camera2D = v["camera"]
+		var p: PlayerCar = v.player
+		var cam: Camera2D = v.camera
 		var d := p.d()
 		# Keep the car's place on screen tied to its offset from the road centre, so road bends
 		# never make the car appear to slide sideways by itself.
 		var cx0 := world.road.center_x(d)
 		var tx := cx0 + (p.position.x - cx0) * 0.6
 		var shake := Vector2.ZERO
-		if v["shake"] > 0.1:
-			shake = Vector2(randf_range(-1, 1), randf_range(-1, 1)) * v["shake"]
-			v["shake"] = move_toward(v["shake"], 0.0, 40.0 * delta)
+		if v.shake > 0.1:
+			shake = Vector2(randf_range(-1, 1), randf_range(-1, 1)) * v.shake
+			v.shake = move_toward(v.shake, 0.0, 40.0 * delta)
 		cam.position = Vector2(tx, p.position.y - CAM_LEAD) + shake
 		var half_h := 360.0 / ZOOM
 		ranges.append(Vector2(-(cam.position.y + half_h) , -(cam.position.y - half_h)))
@@ -206,7 +221,7 @@ func _input(event: InputEvent) -> void:
 			toggle = true
 		else:
 			for v in views:
-				if Game.players[v["slot"]]["kb"] and InputManager.profile(v["slot"])["kb"]["pause"] == k:
+				if Game.players[v.slot]["kb"] and InputManager.profile(v.slot)["kb"]["pause"] == k:
 					toggle = true
 	elif _menu != null and _menu_kind == "pause" and event.is_action_pressed("ui_cancel"):
 		toggle = true   # B on a gamepad closes the pause menu too
@@ -240,8 +255,8 @@ func _close_menu() -> void:
 	get_tree().paused = false
 	AudioManager.duck_music(false)
 	for v in views:
-		if v["player"].state == PlayerCar.State.RACING:
-			AudioManager.engine_start(v["slot"])
+		if v.player.state == PlayerCar.State.RACING:
+			AudioManager.engine_start(v.slot)
 
 
 func _show_menu(kind: String, title: String, lines: Array, buttons: Array) -> void:
@@ -293,8 +308,8 @@ func _end_clear() -> void:
 	var is_best := false
 	var time_left := 0.0
 	for v in views:
-		var p: PlayerCar = v["player"]
-		var tag := "P%d" % (v["slot"] + 1) if views.size() > 1 else "Score"
+		var p: PlayerCar = v.player
+		var tag := "P%d" % (v.slot + 1) if views.size() > 1 else "Score"
 		if p.state == PlayerCar.State.FINISHED:
 			lines.append("%s: %d pts   (%d overtakes, %d crashes)" % [tag, int(p.score), p.overtakes, p.crashes])
 			if int(p.score) > best_score:
@@ -324,8 +339,8 @@ func _end_fail() -> void:
 	SaveManager.store_prefs()
 	var lines := []
 	for v in views:
-		var p: PlayerCar = v["player"]
-		var tag := "P%d" % (v["slot"] + 1) if views.size() > 1 else "Score"
+		var p: PlayerCar = v.player
+		var tag := "P%d" % (v.slot + 1) if views.size() > 1 else "Score"
 		lines.append("%s: %d pts" % [tag, int(p.score)])
 	_show_menu("fail", "OUT OF FUEL", lines, [
 		["Retry Stage", func(): Game.go_to_race(Game.stage_index)],

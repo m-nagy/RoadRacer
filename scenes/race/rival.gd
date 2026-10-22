@@ -5,7 +5,7 @@ extends Node2D
 var kind := "taxi"
 var def: Dictionary
 var behavior := "keeper"
-var world: Node
+var world: World
 var speed := 300.0
 var base_speed := 300.0
 var lane_pos := 0.0      # fractional lane index
@@ -40,7 +40,7 @@ var _blinker_drawn := NO_BLINK   # indicator state the node was last redrawn for
 const NO_BLINK := -2
 
 
-func setup(kind_name: String, w: Node, lane: int, d: float, speed_mult: float) -> void:
+func setup(kind_name: String, w: World, lane: int, d: float, speed_mult: float) -> void:
 	kind = kind_name
 	def = CarDefs.KINDS[kind]
 	behavior = def["behavior"]

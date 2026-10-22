@@ -202,15 +202,15 @@ func _draw_surface() -> void:
 
 		# Shortcut strips.
 		for s in road.shortcuts:
-			if da >= s["d0"] and db <= s["d1"] + seg:
-				var sd: float = s["side"]
+			if da >= s.d0 and db <= s.d1 + seg:
+				var sd: float = s.side
 				var inner_a := ca + sd * (ha - 4.0)
 				var outer_a := ca + sd * (ha + Road.STRIP_W)
 				var inner_b := cb + sd * (hb - 4.0)
 				var outer_b := cb + sd * (hb + Road.STRIP_W)
-				var col := Color("c9a868") if not s["hidden"] else ground.lerp(asphalt, 0.18)
+				var col := Color("c9a868") if not s.hidden else ground.lerp(asphalt, 0.18)
 				draw_colored_polygon(PackedVector2Array([Vector2(inner_a, ya), Vector2(outer_a, ya), Vector2(outer_b, yb), Vector2(inner_b, yb)]), col)
-				if not s["hidden"] and (i / 3) % 2 == 0:
+				if not s.hidden and (i / 3) % 2 == 0:
 					draw_line(Vector2((inner_a + outer_a) * 0.5, ya), Vector2((inner_b + outer_b) * 0.5, yb), Color("fff3b0"), 3.0)
 
 		# Curbs (with gaps where a shortcut begins).
@@ -250,23 +250,23 @@ func _in_chunk(d: float) -> bool:
 
 func _draw_front() -> void:
 	for s in road.shortcuts:
-		var sd: float = s["side"]
+		var sd: float = s.side
 		# Tunnel mouth at the end of the strip.
-		var d: float = s["d1"]
+		var d: float = s.d1
 		if _in_chunk(d):
 			var hw := road.half_width(d)
 			var cx := road.center_x(d) + sd * (hw + Road.STRIP_W * 0.5)
 			draw_rect(Rect2(cx - Road.STRIP_W * 0.5 - 8, -d - 14, Road.STRIP_W + 16, 26), Color("3b3b44"))
 			draw_rect(Rect2(cx - Road.STRIP_W * 0.5 + 6, -d - 10, Road.STRIP_W - 12, 22), Color("050507"))
-		if not s["hidden"]:
+		if not s.hidden:
 			# Arrow signs leading to the strip.
 			for k in 3:
-				var dd: float = s["d0"] - 300.0 + k * 90.0
+				var dd: float = s.d0 - 300.0 + k * 90.0
 				if _in_chunk(dd):
 					var sx := road.center_x(dd) + sd * (road.half_width(dd) + 30.0)
 					var ay := -dd
 					draw_colored_polygon(PackedVector2Array([Vector2(sx - 14, ay + 8), Vector2(sx + 14, ay + 8), Vector2(sx, ay - 14)]), Color("ffd23f"))
-			var txt_d: float = s["d0"] - 100.0
+			var txt_d: float = s.d0 - 100.0
 			if _in_chunk(txt_d):
 				var tx := road.center_x(txt_d) + sd * (road.half_width(txt_d) + 70.0)
 				draw_string(_font, Vector2(tx - 52, -txt_d), "SHORTCUT", HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color("ffd23f"))

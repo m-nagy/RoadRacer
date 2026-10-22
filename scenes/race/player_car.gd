@@ -21,7 +21,7 @@ const CRASH_PENALTY := 5.0
 
 var slot := 0
 var easy := false
-var world: Node
+var world: World
 var state := State.RACING
 var speed := 0.0
 var vx := 0.0
@@ -55,7 +55,7 @@ var _wobble := 0.0
 var _super_visual := false
 
 
-func setup(w: Node, slot_idx: int, color_idx: int, easy_mode: bool, lane: int) -> void:
+func setup(w: World, slot_idx: int, color_idx: int, easy_mode: bool, lane: int) -> void:
 	world = w
 	slot = slot_idx
 	easy = easy_mode
@@ -69,7 +69,7 @@ func setup(w: Node, slot_idx: int, color_idx: int, easy_mode: bool, lane: int) -
 	add_child(_sprite)
 	if easy:
 		pilot = AutoPilot.new()
-		pilot._replan = slot_idx + 1  # stagger the two players' planning frames
+		pilot.set_stagger(slot_idx + 1)  # the two players plan on different ticks
 	position = Vector2(w.road.lane_x(60.0, lane), -60.0)
 	rotation = w.road.heading(60.0)
 	_last_d = 60.0

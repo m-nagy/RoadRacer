@@ -17,14 +17,45 @@ var target_lane := -1
 var debug := ""
 var history: Array = []
 
+## A car or hazard as the planner sees it: where it is, how it moves, how big it is.
+class Predicted:
+	var d := 0.0      # distance along the road
+	var u := 0.0      # offset from the road centre
+	var v := 0.0      # forward speed
+	var ut := 0.0     # offset it is heading for
+	var rate := 0.0   # how fast it moves sideways
+	var hw := 0.0
+	var hh := 0.0
+	var kind := ""    # "car", "chaser", "static" or "oil"
+
+
+	static func make(d_: float, u_: float, v_: float, ut_: float, rate_: float, hw_: float, hh_: float, kind_: String) -> Predicted:
+		var p := Predicted.new()
+		p.d = d_
+		p.u = u_
+		p.v = v_
+		p.ut = ut_
+		p.rate = rate_
+		p.hw = hw_
+		p.hh = hh_
+		p.kind = kind_
+		return p
+
+
 var _cap := 9999.0
-var _replan := 0            # frames until the next full re-plan
-var _objs: Array = []       # predicted traffic: {d, u, v, ut, rate, hw, hh, kind}
-var _pickups: Array = []    # [d, u]
+var _replan := 0            # ticks until the next full re-plan
+var _objs: Array[Predicted] = []
+var _pickup_d := PackedFloat64Array()   # fuel cans ahead: distance...
+var _pickup_u := PackedFloat64Array()   # ...and offset from the road centre
+
+
+## Staggers when this pilot re-plans, so two pilots never search on the same tick.
+func set_stagger(ticks: int) -> void:
+	_replan = ticks
 
 
 ## Returns {"x": where to steer now, "ff": sideways speed needed to follow the lane, "cap": max speed}.
-func plan(p: PlayerCar, world: Node) -> Dictionary:
+func plan(p: PlayerCar, world: World) -> Dictionary:
 	var road: Road = world.road
 	var d := p.d()
 	var v := p.speed
@@ -51,7 +82,7 @@ func plan(p: PlayerCar, world: Node) -> Dictionary:
 	return {"x": tx, "ff": ff, "cap": _cap}
 
 
-func _search(p: PlayerCar, world: Node, road: Road, d: float, v: float, u: float, n: int, cur: int) -> void:
+func _search(p: PlayerCar, world: World, road: Road, d: float, v: float, u: float, n: int, cur: int) -> void:
 	_gather(p, world, road, d, v)
 
 	var v_want := maxf(p.target_speed, 60.0)
@@ -100,8 +131,8 @@ func _search(p: PlayerCar, world: Node, road: Road, d: float, v: float, u: float
 	if Autotest.enabled:
 		var near := []
 		for o in _objs:
-			if o["d"] - d < 500.0 and o["d"] - d > -120.0:
-				near.append("%s@%.0f/%.0f>%.0f v%.0f" % [o["kind"].substr(0, 3), o["d"] - d, o["u"], o["ut"], o["v"]])
+			if o.d - d < 500.0 and o.d - d > -120.0:
+				near.append("%s@%.0f/%.0f>%.0f v%.0f" % [o.kind.substr(0, 3), o.d - d, o.u, o.ut, o.v])
 		history.append("d=%.0f u=%.0f v=%.0f %s near=%s" % [d, u, v, debug, str(near)])
 		if history.size() > 30:
 			history.pop_front()
@@ -116,9 +147,10 @@ func _danger(t: float) -> float:
 	return 300.0 + 12000.0 * k * k
 
 
-func _gather(p: PlayerCar, world: Node, road: Road, d: float, v: float) -> void:
+func _gather(p: PlayerCar, world: World, road: Road, d: float, v: float) -> void:
 	_objs.clear()
-	_pickups.clear()
+	_pickup_d.clear()
+	_pickup_u.clear()
 	var lo := d - 700.0
 	var hi := d + maxf(v, 300.0) * STEPS * STEP + 300.0
 	for r in world.rivals:
@@ -136,21 +168,22 @@ func _gather(p: PlayerCar, world: Node, road: Road, d: float, v: float) -> void:
 		var lead: float = world.lead_speed(r)
 		if lead >= 0.0:
 			rv = minf(rv, lead)
-		_objs.append({"d": rd, "u": ru, "v": rv, "ut": ut, "rate": r.lane_speed * Road.LANE_W, "hw": r.hw, "hh": r.hh, "kind": kind})
+		_objs.append(Predicted.make(rd, ru, rv, ut, r.lane_speed * Road.LANE_W, r.hw, r.hh, kind))
 		var il: int = r.intended_lane()
 		if il != r.target_lane:
 			# About to change lanes: also reserve the lane it is signalling towards.
-			_objs.append({"d": rd, "u": ru, "v": rv, "ut": road.lane_x(rd, il) - cx, "rate": r.lane_speed * Road.LANE_W, "hw": r.hw, "hh": r.hh, "kind": "car"})
+			_objs.append(Predicted.make(rd, ru, rv, road.lane_x(rd, il) - cx, r.lane_speed * Road.LANE_W, r.hw, r.hh, "car"))
 	for o in world.obstacles:
 		var od: float = o.d()
 		if od < lo or od > hi:
 			continue
 		var ou: float = o.position.x - road.center_x(od)
-		_objs.append({"d": od, "u": ou, "v": 0.0, "ut": ou, "rate": 0.0, "hw": o.hw, "hh": o.hh, "kind": "oil" if o.kind == "oil" else "static"})
+		_objs.append(Predicted.make(od, ou, 0.0, ou, 0.0, o.hw, o.hh, "oil" if o.kind == "oil" else "static"))
 	for pk in world.pickups:
 		var pd: float = pk.d()
 		if pd > d and pd < hi:
-			_pickups.append([pd, pk.position.x - road.center_x(pd)])
+			_pickup_d.append(pd)
+			_pickup_u.append(pk.position.x - road.center_x(pd))
 	for q in world.players:
 		if q == p or q.state != PlayerCar.State.RACING:
 			continue
@@ -162,7 +195,7 @@ func _gather(p: PlayerCar, world: Node, road: Road, d: float, v: float) -> void:
 		var qt := qu
 		if q.pilot:
 			qt = road.lane_x(qd, q.pilot.target_lane) - qcx  # the other auto-steer car's plan
-		_objs.append({"d": qd, "u": qu, "v": q.speed, "ut": qt, "rate": 400.0, "hw": q.hw, "hh": q.hh, "kind": "car"})
+		_objs.append(Predicted.make(qd, qu, q.speed, qt, 400.0, q.hw, q.hh, "car"))
 
 
 ## Simulates our car keeping its current lane for `delay` seconds, then heading for `lane`,
@@ -196,30 +229,29 @@ func _simulate(p: PlayerCar, road: Road, d: float, u: float, v: float, lane: int
 			cvx = move_toward(cvx, want, lat_accel * STEP)
 			cu += cvx * STEP
 		for o in _objs:
-			var od: float = o["d"] + o["v"] * t
-			var ou: float = o["u"]
-			if o["kind"] == "chaser":
+			var od: float = o.d + o.v * t
+			var ou: float = o.u
+			if o.kind == "chaser":
 				ou = move_toward(ou, cu, 150.0 * t)
-			elif o["rate"] > 0.0:
-				ou = move_toward(ou, o["ut"], o["rate"] * t)
-			var margin_y := maxf(cv - o["v"], 0.0) * 0.1  # keep a bigger gap when closing fast
-			if absf(cd - od) < hh + o["hh"] + margin_y and absf(cu - ou) < hw + o["hw"]:
-				if o["kind"] == "oil":
+			elif o.rate > 0.0:
+				ou = move_toward(ou, o.ut, o.rate * t)
+			var margin_y := maxf(cv - o.v, 0.0) * 0.1  # keep a bigger gap when closing fast
+			if absf(cd - od) < hh + o.hh + margin_y and absf(cu - ou) < hw + o.hw:
+				if o.kind == "oil":
 					oil = oil or k <= 12          # only a skid; only care when close
-				elif od < cd and o["v"] > cv:
+				elif od < cd and o.v > cv:
 					t_bump = minf(t_bump, t)      # something faster runs into us: just a bump
 				else:
 					return [t, fuel, t_bump, oil]
-		for i in _pickups.size():
-			var pk: Array = _pickups[i]
-			if not taken.has(i) and absf(cd - pk[0]) < 40.0 and absf(cu - pk[1]) < 40.0:
+		for i in _pickup_d.size():
+			if not taken.has(i) and absf(cd - _pickup_d[i]) < 40.0 and absf(cu - _pickup_u[i]) < 40.0:
 				taken[i] = true
 				fuel += 1
 	return [INF, fuel, t_bump, oil]
 
 
 ## Debug helper (autotest only): re-simulates staying in the current lane at full speed.
-func explain(p: PlayerCar, world: Node) -> String:
+func explain(p: PlayerCar, world: World) -> String:
 	var road: Road = world.road
 	var d := p.d()
 	_gather(p, world, road, d, p.speed)
@@ -227,6 +259,6 @@ func explain(p: PlayerCar, world: Node) -> String:
 	var res := _simulate(p, road, d, u, p.speed, target_lane, p.speed, 0.0)
 	var objs := []
 	for o in _objs:
-		if o["d"] - d < 300.0 and o["d"] - d > -150.0:
-			objs.append("%s d%+.0f u%.0f v%.0f hh%.0f" % [o["kind"], o["d"] - d, o["u"], o["v"], o["hh"]])
+		if o.d - d < 300.0 and o.d - d > -150.0:
+			objs.append("%s d%+.0f u%.0f v%.0f hh%.0f" % [o.kind, o.d - d, o.u, o.v, o.hh])
 	return "sim=%s u=%.0f v=%.0f objs=%s" % [str(res), u, p.speed, str(objs)]

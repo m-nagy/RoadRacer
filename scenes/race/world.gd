@@ -21,10 +21,10 @@ var cp_bonus := 25.0           # seconds added at each checkpoint (depends on st
 var road: Road
 var running := false
 var t := 0.0
-var rivals: Array = []
-var obstacles: Array = []
-var pickups: Array = []
-var players: Array = []
+var rivals: Array[Rival] = []
+var obstacles: Array[Obstacle] = []   # live ones only (see _stream_course), sorted by distance
+var pickups: Array[Pickup] = []
+var players: Array[PlayerCar] = []
 var rng := RandomNumberGenerator.new()
 
 var _obstacle_layer: Node2D
@@ -811,8 +811,8 @@ func _update_progress() -> void:
 			popup.emit(p.slot, "CHECKPOINT +%d" % int(cp_bonus), "good")
 			AudioManager.play("checkpoint")
 		var s := road.strip_at(p.position.x, d)
-		if s >= 0 and d >= road.shortcuts[s]["d1"] - 50.0:  # nose reaches the tunnel
-			var target: float = road.shortcuts[s]["exit_d"]
+		if s >= 0 and d >= road.shortcuts[s].d1 - 50.0:  # nose reaches the tunnel
+			var target: float = road.shortcuts[s].exit_d
 			p.teleport_to(target)
 			_stream_course()
 			p.score += 1000.0
