@@ -188,8 +188,7 @@ func _update_cameras(delta: float) -> void:
 		cam.position = Vector2(tx, p.position.y - CAM_LEAD) + shake
 		var half_h := 360.0 / ZOOM
 		ranges.append(Vector2(-(cam.position.y + half_h) , -(cam.position.y - half_h)))
-	world.road.view_ranges = ranges
-	world.road.queue_redraw()
+	world.road.set_view_ranges(ranges)
 
 
 func _input(event: InputEvent) -> void:
