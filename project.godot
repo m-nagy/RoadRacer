@@ -23,6 +23,7 @@ InputManager="*res://autoload/input_manager.gd"
 Sfx="*res://autoload/sfx.gd"
 AudioManager="*res://autoload/audio_manager.gd"
 Autotest="*res://autoload/autotest.gd"
+SmokeTest="*res://autoload/smoke_test.gd"
 
 [display]
 

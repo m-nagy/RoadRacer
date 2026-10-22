@@ -47,6 +47,12 @@ Stages unlock in order and can be replayed:
 
 Roads change from 2 to 4 lanes, wind left and right, and get longer and busier from stage to stage.
 
+### Six challenges
+After clearing a stage, a shorter **challenge** version of it opens up (Stage Select -> Challenges), with another weather and
+sometimes another time of day: City Downpour (rain), Misty Fields (fog), Bridge Gale (strong crosswind), Desert Storm (storm at
+night), Blizzard Pass (snow storm) and Midnight Run (the night city, dry). The weather changes the driving too: slippery roads,
+and gusts that push the car sideways. On two-lane roads there is less traffic, so a car at full speed can pass.
+
 ### Race against the clock
 * A **timer** starts at 100 seconds. Collect **fuel cans** (+10 s) and pass **3 checkpoints** per stage to gain more time.
 * **Hidden shortcuts** skip a few hundred metres if you find them.

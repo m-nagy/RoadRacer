@@ -48,17 +48,30 @@ The exe gets the game icon and name from the export preset; Godot does this itse
 The `build/` folder is git-ignored.
 
 ### Automatic builds (GitHub Actions)
-`.github/workflows/build.yml` builds the Windows exe on every push and pull request (download it from the run's
-**Artifacts**). Pushing a version tag such as `v1.0.0` also creates a GitHub Release with `RoadRacer-windows.zip` attached:
+`.github/workflows/build.yml` builds the Windows exe on every push to `master` and on pull requests (download it from the
+run's **Artifacts**). Pushing a version tag such as `v1.0.0` also creates a GitHub Release with `RoadRacer-windows.zip` attached:
 
 ```
 git tag v1.0.0
 git push origin v1.0.0
 ```
 
+The pipeline makes a **release build** without debug symbols, and checks that:
+* it is built with a **small custom export template** (`.github/godot/custom.py`: 2D only, size-optimised, only the engine
+  parts the game uses). The first run compiles it (about an hour); later runs reuse the cached copy. If the template build
+  fails, the stock Godot release template is used instead (the job summary says which one was used);
+* the exe has no debug sections or symbol table, and no script source (`.gd`) or notes are packed inside it
+  (`.github/scripts/pck_list.py`);
+* the exe starts and plays a short two-player race on Windows (`RoadRacer.exe --headless -- --smoke-test --expect-release`).
+
+If the game starts using an engine feature the custom template left out (the smoke test then fails), enable its module in
+`.github/godot/custom.py`.
+
 ## Menus
 
 Home -> (Stage Select) -> **Who plays?** -> **Cars** -> race. Home also has **Options** and Full Screen.
+**Stage Select** has the 6 campaign stages and a **Challenges** tab (switch with Q / E or LB / RB): shorter versions of
+the campaign stages with their own weather and time of day. A challenge unlocks when the stage it is based on is cleared.
 
 | | Keyboard | Gamepad |
 |---|---|---|
@@ -75,7 +88,8 @@ moved left uses Player 1's keyboard keys, moved right uses Player 2's. Enter / A
 keys; the slow key / A = ready, or press Enter to start at once.
 
 ## Options
-* **Game Settings** - difficulty (Easy / Normal / Hard), music and effects volume, full screen.
+* **Game Settings** - difficulty (Easy / Normal / Hard), music and effects volume, full screen, and **Graphics** (Normal /
+  Low: Low uses fewer weather particles and no night headlights, for slow graphics cards).
 * **Controls** - remap every key and gamepad button for Player 1 and Player 2 (select a cell, press the new key / button,
   Esc cancels). Saved immediately; "Reset defaults" per player. A *Controller monitor* shows live what each connected
   pad reports (handy if a pad has a stuck / phantom button; a `*` means "held from before, ignored until released").
@@ -111,8 +125,17 @@ user data folder: `%APPDATA%\Road Racer\` on Windows).
 | Attacking rivals (Black Viper / police) | rare | normal | frequent |
 | Obstacles | fewer | normal | more |
 
-The checkpoint bonus is computed per stage and difficulty (`data/difficulty.gd`, `v_slow` / `v_fast` in `data/stages.gd`)
-so those allowances hold. Easy is calibrated for slow gear throughout; Hard needs fast gear most of the time.
+The checkpoint bonus is computed per stage and difficulty (`data/difficulty.gd`; `v_slow` / `v_fast` in the stage files)
+so those allowances hold. Easy is calibrated for slow gear throughout; Hard needs fast gear most of the time. A short
+stage (a challenge) starts with less than 100 s instead of getting very large checkpoint bonuses.
+
+### Weather
+Each stage has a weather (`data/weather/*.tres`) that changes how the car drives as well as how it looks: rain, snow and
+blizzard are slippery, a sandstorm a little, fog slightly; gale and storm add a crosswind that pushes the car sideways.
+
+### Two-lane roads
+Where the road has only two lanes there is less traffic and fewer obstacles, cars keep a longer gap between lanes, and the
+Black Viper does not block, so a car at full speed can overtake.
 
 ### Obstacles (one per row at most)
 * **Rock** - crash.
@@ -139,24 +162,38 @@ pressed. A red label and brake lights tell you why the car is slowing down. F3 s
 | Folder | Contents |
 |---|---|
 | `autoload/` | Global singletons: game flow, save data, input, audio, sound synthesis, developer bot |
-| `scenes/title/` | Home, Who plays?, Cars and Options screens |
-| `scenes/race/` | The race: road, world, player car, rivals, obstacles, HUD, weather, auto-pilot |
-| `data/` | Stage definitions, difficulty tuning, default controls |
+| `scenes/title/` | Home, Stage Select, Who plays?, Cars and Options screens (`.tscn` scenes plus their scripts) |
+| `scenes/race/` | The race: `world.gd` runs a tick and uses helpers (`course`, `traffic_query`, `traffic`, `collisions`, `race_rules`); road, cars, obstacles, HUD (`hud.tscn`), weather, auto-pilot |
+| `data/` | Resources you can edit in the Inspector: stages (`stages/`), challenges (`challenges/`), weather (`weather/`), car kinds (`cars/`), difficulty levels (`difficulty/`); default controls |
 | `assets/` | Car sprites, UI graphics, music and sound effects used by the game |
+| `.github/` | The build pipeline, the custom export template options and the check scripts |
 | `art/` | Source of the game icon (`icon.svg`; ignored by Godot) |
+
+### Adding a stage
+* **A new challenge from an existing track:** duplicate a file in `data/challenges/`, change `id`, `name`, `base`, `weather`,
+  `time_of_day`, `length_scale` and `rng_seed`, and add it to `Stages.VARIANTS`. Then measure `v_slow` / `v_fast` with the bot
+  (`gear=slow` / `gear=fast`, `diff=normal`, `notime`: the printed `v_eff`) and put them in the file so the time budget fits.
+* **A new weather:** duplicate a file in `data/weather/` and edit its particle layers, tint, grip and wind.
+* **A new campaign stage:** a new `StageData` (copy one in `data/stages/`) with its own `id` and `rng_seed`, added to
+  `Stages.CAMPAIGN`.
 
 ## Design notes
 - **Input** (`autoload/input_manager.gd`) is read directly instead of through InputMap: that is what makes the stuck-button
   and mirrored-gamepad filters, and per-player remapping, possible. The menus still use the normal `ui_*` actions.
 - **Simulation** runs on the fixed physics tick (`World._physics_process`), so the game plays at the same speed at any frame rate.
+- **Stages are identified by `id`**, and the save file (version 2) is keyed by it; version 1 saves are converted on load. Saves are
+  written to a temporary file and renamed, keeping the previous one as `save.json.bak`.
 
 ## Developer bot
 `godot --path . -- --autotest stage=4 players=2 easy=1 gear=fast seconds=60 shots=5,20 scale=2` drives the real game with the
 autopilot, prints crashes/progress and saves screenshots to `user://autotest/`. Run it headless and faster than real time
 with `--headless --fixed-fps 30`. Flags: `diff=easy|normal|hard`, `notime`, `crashes=N`, `hit=<obstacle kind|all>`, `super`,
 `title screen=0..4 fill flow=kb|pad|remap`, `shortcut`, `jump=0.98`, `pause=5`, `forcecrash=2`, `stat=N`, `padlog`,
-`police=6` (call the police on P1 after 6 s and log the chase). The stat line's audit counts rival `overlaps`, `walls`
-(rows of cars closing every lane ahead of a player) and `police_near`.
+`police=6` (call the police on P1 after 6 s and log the chase), `stage=<number or id>` (`stage=rain_city` for a challenge),
+`graphics=low`, `cleared=city,bridge` (pretend only these stages are cleared), `gpu` (print GPU ms per view; needs a real
+window). The stat line's audit counts rival `overlaps`, `walls` (rows of cars closing every lane ahead of a player) and
+`police_near`; the `[narrow]` line at the end tells how fast a fast-gear player got through two-lane roads.
+The bot only runs in debug builds (exports ignore it), and writes its own save file, never yours.
 
 ## Credits
 * **Cars:** UnLuckY Studio "Awesome Car Pack" (www.unluckystudio.com) - free to use, including in commercial projects.
