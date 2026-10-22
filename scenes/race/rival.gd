@@ -2,6 +2,11 @@ class_name Rival
 extends Node2D
 ## A computer-driven car. Behaviour depends on its kind (see CarDefs).
 
+## Called police stuck far behind in traffic asks to be put back just out of view.
+signal reentry_requested(rival: Rival)
+## A car that has been stuck for too long asks to be removed.
+signal gave_up(rival: Rival)
+
 var kind := "taxi"
 var def: CarKind
 var behavior := "keeper"
@@ -102,7 +107,7 @@ func tick(dt: float) -> void:
 		if _chase_t <= 0.0 or chase.state != PlayerCar.State.RACING or ahead_by > 300.0:
 			chase = null
 		elif ahead_by < -700.0:
-			world.call_deferred("bring_police_closer", self)   # stuck in traffic: re-enter out of view
+			reentry_requested.emit(self)   # stuck in traffic: re-enter out of view
 		elif ahead_by < -40.0:
 			# Called police still behind its target: race up (always faster than the player),
 			# easing off as it draws level so it ends up alongside.
@@ -110,10 +115,10 @@ func tick(dt: float) -> void:
 			want = minf(maxf(base_speed, chase.speed + clampf((-ahead_by - 40.0) * 0.5, 50.0, 170.0)), PlayerCar.FAST_MAX + 200.0)
 
 	# Keep a safe distance behind the cars ahead, and (ordinary traffic) never close the last open lane.
-	limit = world.follow_limit(self)
+	limit = world.query.follow_limit(self)
 	_wall_skip = maxf(0.0, _wall_skip - dt)
 	if chase == null and not _free_x and not CarDefs.FAST_KINDS.has(kind) and _wall_skip <= 0.0:
-		var wl: float = world.wall_limit(self)
+		var wl: float = world.query.wall_limit(self)
 		limit = minf(limit, wl)
 		if wl < 30.0 and speed < 30.0:
 			_wall_wait += dt
@@ -124,7 +129,7 @@ func tick(dt: float) -> void:
 			_wall_wait = 0.0
 	# Every car steers round obstacles on the road (and never drives over them).
 	_blocked = false
-	var ob: Obstacle = world.obstacle_ahead(self, 80.0 + speed * speed / 800.0 + speed * 0.9)
+	var ob: Obstacle = world.query.obstacle_ahead(self, 80.0 + speed * speed / 800.0 + speed * 0.9)
 	if ob != null:
 		var gap: float = ob.d() - dd - ob.hh - hh
 		if _react <= 0.0 and not _free_x:
@@ -133,8 +138,8 @@ func tick(dt: float) -> void:
 			dirs.shuffle()
 			for dl in dirs:
 				var nl: int = clampi(target_lane + dl, 0, n0 - 1)
-				if nl != target_lane and world.lane_is_clear(self, nl, 150.0, maxf(gap + 150.0, 250.0)) \
-						and not world.lane_closes_road(self, nl):
+				if nl != target_lane and world.query.lane_is_clear(self, nl, 150.0, maxf(gap + 150.0, 250.0)) \
+						and not world.query.lane_closes_road(self, nl):
 					target_lane = nl
 					_blink_dir = dl
 					lane_speed = maxf(lane_speed, 2.6)   # swerve briskly round the obstacle
@@ -165,14 +170,14 @@ func tick(dt: float) -> void:
 		_stuck_t += dt
 		if _stuck_t > 5.0 and not dead:
 			dead = true
-			world.call_deferred("_remove_rival", self)
+			gave_up.emit(self)
 			return
 	else:
 		_stuck_t = maxf(0.0, _stuck_t - dt * 2.0)
 
 	match behavior:
 		"passive":
-			var p = world.player_behind(self, 280.0, 55.0)
+			var p = world.query.player_behind(self, 280.0, 55.0)
 			if p != null and _react <= 0.0:
 				_change_lane(1 if lane_now() == 0 else (-1 if lane_now() >= road.lane_count(dd) - 1 else (1 if randf() < 0.5 else -1)))
 				_react = 1.5
@@ -191,7 +196,7 @@ func tick(dt: float) -> void:
 					_change_lane(_blink_dir)
 					_timer = randf_range(2.0, 4.5)
 		"blocker":
-			var p2 = world.player_behind(self, 520.0, 400.0)
+			var p2 = world.query.player_behind(self, 520.0, 400.0)
 			if p2 != null and _react <= 0.0:
 				var pl: int = road.nearest_lane(dd, p2.position.x)
 				if pl != lane_now():
@@ -206,7 +211,7 @@ func tick(dt: float) -> void:
 					if n3 > 1:
 						pl3 = pl3 + 1 if pl3 == 0 or (lane_now() > pl3 and pl3 + 1 < n3) else pl3 - 1
 					var toward := signi(pl3 - lane_now())
-					if world.car_ahead_in_lane(self, 260.0) != null:
+					if world.query.car_ahead_in_lane(self, 260.0) != null:
 						if toward == 0:
 							toward = 1 if randf() < 0.5 else -1
 						if not _change_lane(toward):
@@ -214,7 +219,7 @@ func tick(dt: float) -> void:
 						_react = 0.5
 					elif toward != 0 and _change_lane(toward):
 						_react = 0.6
-			var p3 = chase if chase != null else world.player_behind(self, 620.0, 400.0)
+			var p3 = chase if chase != null else world.query.player_behind(self, 620.0, 400.0)
 			if p3 != null and not catching_up and _ram_cd <= 0.0 and not _blocked:
 				if not _free_x:
 					_free_x = true
@@ -235,7 +240,7 @@ func tick(dt: float) -> void:
 					lane_pos = float(road.nearest_lane(dd, road.center_x(dd) + _free_u))
 					target_lane = lane_now()
 		"passer":
-			var blocker = world.car_ahead_in_lane(self, 340.0)
+			var blocker = world.query.car_ahead_in_lane(self, 340.0)
 			if blocker != null and _react <= 0.0:
 				var n := road.lane_count(dd)
 				var dir2 := 1 if lane_now() < n - 1 and (lane_now() == 0 or randf() < 0.5) else -1
@@ -277,9 +282,9 @@ func tick(dt: float) -> void:
 func _change_lane(dir: int, merging := false) -> bool:
 	var n: int = world.road.lane_count(d())
 	var nl := clampi(target_lane + dir, 0, n - 1)
-	if nl == target_lane or not world.lane_is_clear(self, nl, 170.0):
+	if nl == target_lane or not world.query.lane_is_clear(self, nl, 170.0):
 		return false
-	if not merging and chase == null and world.lane_closes_road(self, nl):
+	if not merging and chase == null and world.query.lane_closes_road(self, nl):
 		return false   # would leave the player no way through
 	target_lane = nl
 	return true

@@ -232,7 +232,7 @@ func _process(delta: float) -> void:
 			var row: int = k / 3
 			var col: int = k % 3
 			var ox := hp.position.x if hit_kind != "all" else world.road.lane_x(hp.d() + 250.0, col)
-			world.place_obstacle(kinds_to_place[k], Vector2(ox, hp.position.y - 330.0 - row * 190.0))
+			world.course.place_obstacle(kinds_to_place[k], Vector2(ox, hp.position.y - 330.0 - row * 190.0))
 		print("[hit] placed %s ahead: p d=%.0f u=%.0f v=%.0f" % [hit_kind, hp.d(), hp.position.x - world.road.center_x(hp.d()), hp.speed])
 	if _hit_t > 0.0 and _t < _hit_t + 4.0:
 		var q: PlayerCar = world.players[0]
@@ -240,7 +240,7 @@ func _process(delta: float) -> void:
 	if police_at >= 0.0 and _t >= police_at:
 		var pp: PlayerCar = world.players[0]
 		if _police_log == 0.0:
-			world.call_police(pp)
+			world.traffic.call_police(pp)
 			_police_log = _t
 		if _t >= _police_log and _t < police_at + 15.0:
 			_police_log = _t + 0.5
@@ -292,7 +292,7 @@ func _process(delta: float) -> void:
 		for q in world.players:
 			print("[totals] P%d score=%d crashes=%d overtakes=%d state=%d d=%.0f" % [q.slot + 1, int(q.score), q.crashes, q.overtakes, q.state, q.d()])
 		print("[perf] samples=%d process_ms avg=%.3f max=%.3f | physics_ms avg=%.3f max=%.3f" % [_perf_n, _perf_proc / maxf(_perf_n, 1), _perf_proc_max, _perf_phys / maxf(_perf_n, 1), _perf_phys_max])
-		print("[autotest] finished at t=%.1f  sim_t=%.1f length=%.0f crashes=%d  v_eff=%.0f px/s  state=%d time_left=%.0f fuel=%d/%d" % [_t, world.t, world.road.length, cr, eff, wp.state, wp.time_left, world.pickups_taken, world.pickups_total])
+		print("[autotest] finished at t=%.1f  sim_t=%.1f length=%.0f crashes=%d  v_eff=%.0f px/s  state=%d time_left=%.0f fuel=%d/%d" % [_t, world.t, world.road.length, cr, eff, wp.state, wp.time_left, world.course.pickups_taken, world.course.pickups_total])
 		get_tree().quit()
 
 

@@ -165,7 +165,7 @@ func _gather(p: PlayerCar, world: World, road: Road, d: float, v: float) -> void
 		var ut: float = road.lane_x(rd, r.target_lane) - cx
 		# Rivals slow down behind slower traffic: predict that.
 		var rv: float = r.speed
-		var lead: float = world.lead_speed(r)
+		var lead: float = world.query.lead_speed(r)
 		if lead >= 0.0:
 			rv = minf(rv, lead)
 		_objs.append(Predicted.make(rd, ru, rv, ut, r.lane_speed * Road.LANE_W, r.hw, r.hh, kind))

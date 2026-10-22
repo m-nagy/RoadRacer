@@ -4,6 +4,12 @@ extends Node2D
 
 enum State { RACING, CRASHED, OUT, FINISHED }
 
+## The world listens to these and reacts (sounds, pop-ups, clearing room for a respawn).
+signal crashed(reason: String)
+signal respawned
+signal bumped
+signal oil_hit
+
 const SLOW_MAX := 360.0     # ~200 km/h
 const FAST_MAX := 720.0     # ~400 km/h
 const SLOW_ACCEL := 240.0
@@ -283,7 +289,7 @@ func crash(reason := "") -> void:
 	time_left = maxf(0.0, time_left - CRASH_PENALTY)
 	_sprite.visible = false
 	_sprite.rotation = 0.0
-	world.on_player_crash(self)
+	crashed.emit(reason)
 
 
 func _respawn() -> void:
@@ -306,8 +312,7 @@ func _respawn() -> void:
 	_sprite.visible = true
 	queue_redraw()
 	reset_physics_interpolation()
-	world.clear_area(dd - 160.0, dd + 450.0)
-	world.on_player_respawn(self)
+	respawned.emit()
 
 
 ## Brushed by another car without any penalty: just pushed aside.
@@ -327,7 +332,7 @@ func bump(push_dir: float, overlap: float) -> void:
 		# auto-steer is never shoved into the next hazard.)
 		vx = push_dir * 260.0
 		skid = 0.8
-	world.on_player_bump(self)
+	bumped.emit()
 
 
 func activate_super() -> void:
@@ -363,7 +368,7 @@ func hit_barrel() -> void:
 func hit_oil() -> void:
 	if oil_skid <= 0.0 and invuln <= 0.0:
 		oil_skid = 1.1
-		world.on_player_oil(self)
+		oil_hit.emit()
 
 
 func teleport_to(new_d: float) -> void:
