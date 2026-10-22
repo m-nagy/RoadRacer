@@ -41,6 +41,11 @@ var _pad_t := 0.0
 var _title_shown := false
 var shortcut_test := false
 var jump := 0.0
+var save_test := false    # checks of SaveManager and the device memory (see _run_save_test)
+var save_copy := ""       # savetest: also load a copy of this save file and print what became of it
+var quit_dialog_test := false   # title screen: turn Auto-save off, change something and try to quit
+var quit_dialog_open := true
+var _quit_dialog_done := false
 var preview := false     # save the Stage Select picture of the stage (see _run_preview)
 var _preview_state := 0
 var _preview_t := 0.0
@@ -89,6 +94,13 @@ func _ready() -> void:
 			shortcut_test = true
 		elif a == "preview":
 			preview = true
+		elif a == "savetest":
+			save_test = true
+		elif a.begins_with("savecopy="):
+			save_copy = a.substr(9)
+		elif a.begins_with("quitdialog"):
+			quit_dialog_test = true   # quitdialog=0: only turn Auto-save off and make a change, without trying to quit
+			quit_dialog_open = a != "quitdialog=0"
 		elif a.begins_with("jump="):
 			jump = float(a.get_slice("=", 1))
 		elif a.begins_with("forcecrash="):
@@ -164,6 +176,10 @@ func _begin() -> void:
 		SaveManager.difficulty = diff
 	if cleared_arg != "":
 		SaveManager.cleared.assign(Array(cleared_arg.split(",")) if cleared_arg != "none" else [])
+	if save_test:
+		_run_save_test()
+		get_tree().quit()
+		return
 	if title_mode:
 		for i in players:
 			Game.players[i].ready = false
@@ -200,6 +216,13 @@ func _process(delta: float) -> void:
 					print("[padlog] t=%.1f dev=%d name=%s guid=%s buttons=%s axes=%s blocked=%s" % [_t, dev, Input.get_joy_name(dev), Input.get_joy_guid(dev), str(b), str(ax), str(InputManager.blocked_inputs(dev))])
 		if flow != "":
 			_run_flow(scene)
+		if quit_dialog_test and _t > 1.0 and not _quit_dialog_done:
+			_quit_dialog_done = true
+			SaveManager.set_autosave(false)
+			SaveManager.record_clear("city_1", 10, 5.0)
+			print("[quitdialog] dirty=", SaveManager.dirty)
+			if quit_dialog_open:
+				Game.request_quit()
 		if _t > 0.5 and flow == "" and not _title_shown and scene != null and scene.has_method("show_screen"):
 			_title_shown = true
 			scene.show_screen(title_screen)
@@ -590,6 +613,85 @@ func _run_flow(scene: Node) -> void:
 		elif act == "say":
 			print("[flow] usable pads = ", InputManager.usable_pads(), " connected = ", Input.get_connected_joypads(), " tex=", load("res://assets/ui/panel_grey_dark.png"))
 			print("[flow] current scene = ", scene.name, "  screen=", scene.get("screen"), "  players active=", Game.active_slots(), " kb=", Game.players.map(func(p): return p.kb))
+
+
+func _check(name_: String, ok: bool) -> void:
+	print("[savetest] %s: %s" % ["PASS" if ok else "FAIL", name_])
+
+
+func _write_file(path: String, text: String) -> void:
+	var f := FileAccess.open(path, FileAccess.WRITE)
+	f.store_string(text)
+	f.close()
+
+
+func _read_file(path: String) -> Dictionary:
+	var d = JSON.parse_string(FileAccess.get_file_as_string(path))
+	return d if typeof(d) == TYPE_DICTIONARY else {}
+
+
+## Save file checks, in the sandbox folder (the real save is never touched).
+func _run_save_test() -> void:
+	var dir := "user://autotest/savetest"
+	DirAccess.make_dir_recursive_absolute(dir)
+	for f in DirAccess.get_files_at(dir):
+		DirAccess.remove_absolute(dir + "/" + f)
+	var sm := SaveManager
+	sm.save_path = dir + "/save.json"
+	print("[savetest] default save path here: ", SaveManager.default_path(), "  exe folder writable: ", SaveManager._can_write(OS.get_executable_path().get_base_dir()))
+	# version 2 file: a cleared old stage counts as its whole world, best scores are dropped
+	_write_file(sm.save_path, JSON.stringify({"version": 2, "cleared": ["city", "snow", "rain_city"], "best": {"city": {"score": 5, "time": 1}}, "autosave": true}))
+	sm.load_save()
+	_check("v2 -> v3: cleared city and snow become 6 stages, challenge dropped", sm.cleared.size() == 6 and sm.cleared.has("city_3") and sm.cleared.has("snow_1") and not sm.cleared.has("rain_city"))
+	_check("v2 -> v3: best scores dropped", sm.best.is_empty())
+	_check("v2 -> v3: next unlocked stage follows the cleared ones", sm.is_unlocked("country_1") and not sm.is_unlocked("bridge_1") and sm.continue_id() == "country_1")
+	# version 1 file
+	_write_file(sm.save_path, JSON.stringify({"unlocked": 3, "best": {"1": {"score": 9, "time": 2}}}))
+	sm.load_save()
+	_check("v1 -> v3: stages 1 and 2 cleared", sm.cleared.has("city_1") and sm.cleared.has("country_3") and not sm.cleared.has("bridge_1"))
+	# auto-save off: nothing is written until write()
+	sm.cleared.clear()
+	sm.set_autosave(false)
+	_check("auto-save off is written to the file", _read_file(sm.save_path).get("autosave", true) == false)
+	sm.record_clear("city_1", 123, 10.0)
+	_check("auto-save off: a clear is not written", not _read_file(sm.save_path).get("cleared", []).has("city_1") and sm.dirty)
+	sm.write()
+	_check("write() saves it and clears dirty", _read_file(sm.save_path).get("cleared", []).has("city_1") and not sm.dirty)
+	# auto-save on: written at once, and turning it on writes what is pending
+	sm.record_clear("city_2", 50, 5.0)
+	sm.set_autosave(true)
+	_check("turning auto-save on saves pending changes", _read_file(sm.save_path).get("cleared", []).has("city_2") and not sm.dirty)
+	sm.record_clear("city_3", 70, 5.0)
+	_check("auto-save on: written at once", _read_file(sm.save_path).get("cleared", []).has("city_3"))
+	# remembered devices survive a reload
+	sm.remember_players([{"kind": "kb", "kb": 0}, {"kind": "pad", "guid": "030000005e040000", "name": "Pad"}])
+	sm.last_players = [null, null]
+	sm.load_save()
+	_check("last_players round trip", sm.last_players[0] == {"kind": "kb", "kb": 0} and sm.last_players[1]["guid"] == "030000005e040000")
+	# crash safety: a damaged main file falls back to .bak
+	sm.record_clear("country_1", 1, 1.0)   # a second write, so that .bak exists
+	_write_file(sm.save_path, "{ this is not json")
+	sm.cleared.clear()
+	sm.load_save()
+	_check("damaged save.json falls back to .bak", sm.cleared.has("city_3"))
+	# picking the devices of the last game
+	var devs := [{"id": "kb:0", "kind": "kb", "kb": 0, "dev": -1}, {"id": "kb:1", "kind": "kb", "kb": 1, "dev": -1},
+		{"id": "pad:3", "kind": "pad", "dev": 3}, {"id": "pad:5", "kind": "pad", "dev": 5}]
+	var guid := func(d): return {3: "AAA", 5: "BBB"}[d["dev"]]
+	var pick := PlayersScreen.pick_devices([{"kind": "pad", "guid": "BBB"}, {"kind": "kb", "kb": 1}], devs, guid)
+	_check("pad by GUID in P1, keyboard 2 in P2", pick[0].get("id") == "pad:5" and pick[1].get("id") == "kb:1")
+	pick = PlayersScreen.pick_devices([{"kind": "pad", "guid": "ZZZ"}, {"kind": "pad", "guid": "AAA"}], devs, guid)
+	_check("a pad that is not plugged in leaves its slot empty", pick[0].is_empty() and pick[1].get("id") == "pad:3")
+	devs[3]["dev"] = 3   # two pads of the same model: each is used once
+	pick = PlayersScreen.pick_devices([{"kind": "pad", "guid": "AAA"}, {"kind": "pad", "guid": "AAA"}], devs, guid)
+	_check("two pads of one model are told apart", pick[0].get("id") == "pad:3" and pick[1].get("id") == "pad:5")
+	pick = PlayersScreen.pick_devices([null, null], devs, guid)
+	_check("nothing remembered, nothing placed", pick[0].is_empty() and pick[1].is_empty())
+	if save_copy != "":
+		DirAccess.copy_absolute(save_copy, sm.save_path)
+		sm.load_save()
+		print("[savetest] copy of %s: version in file %s -> cleared=%s best=%s autosave=%s difficulty=%s" % [save_copy, str(_read_file(save_copy).get("version", 1)), str(sm.cleared), str(sm.best), sm.autosave, sm.difficulty])
+		print("[savetest] continue = ", sm.continue_id(), "  controls kept: P1 kb left=", InputManager.key_label(sm.controls[0]["kb"]["left"]))
 
 
 ## Stage Select picture: a frame of the road about a third of the way in (inside a fog bank on foggy

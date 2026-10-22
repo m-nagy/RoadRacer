@@ -5,6 +5,7 @@ extends Node
 const MAX_PLAYERS := GameConst.MAX_PLAYERS
 
 const COLORS := GameConst.COLORS
+const QUIT_DIALOG := preload("res://scenes/quit_dialog.tscn")
 
 
 ## One entry per slot (see PlayerSlot).
@@ -14,13 +15,29 @@ var shader: Shader = preload("res://shaders/car_color.gdshader")
 var prefs_applied := false
 var pending_stage_id := "" # stage chosen on the home screen, started after players + cars are picked
 var debug_boxes := false   # F3: show collision boxes
+var _quit_dialog: Node
 
 
 func _ready() -> void:
+	get_tree().auto_accept_quit = false   # closing the window goes through request_quit()
 	reset_players()
 	# Start in the saved window mode (the test bot keeps the window it was given).
 	if not OS.get_cmdline_user_args().has("--autotest"):
 		set_fullscreen(SaveManager.fullscreen, false)
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_CLOSE_REQUEST:
+		request_quit()
+
+
+## Quits the game, asking first when Auto-save is off and there is progress that was not saved.
+func request_quit() -> void:
+	if not SaveManager.dirty:
+		get_tree().quit()
+	elif not is_instance_valid(_quit_dialog):
+		_quit_dialog = QUIT_DIALOG.instantiate()
+		get_tree().root.add_child(_quit_dialog)
 
 
 func reset_players() -> void:

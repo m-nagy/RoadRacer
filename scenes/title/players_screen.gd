@@ -17,6 +17,7 @@ var _font: Font = ThemeDB.fallback_font
 var _t := 0.0
 var _msg := ""
 var _msg_t := 0.0
+var _restored := false   # the devices of the last game are put back once per session
 
 
 func _ready() -> void:
@@ -29,7 +30,48 @@ func open() -> void:
 	visible = true
 	InputManager.freeze_held()
 	_refresh_devices()
+	if not _restored:
+		_restored = true
+		_restore_last_players()
 	_msg = ""
+
+
+## Puts the keyboard / gamepads of the last game back in their player panels (a gamepad only when it is
+## still plugged in).
+func _restore_last_players() -> void:
+	var picks := pick_devices(SaveManager.last_players, devices)
+	for slot in 2:
+		var d: Dictionary = picks[slot]
+		if d.is_empty():
+			continue
+		d["pos"] = -1 if slot == 0 else 1
+		d["x"] = COL_X[d["pos"]]
+
+
+## Which of `devs` each player slot used last time ({} where that device is gone). `saved` is
+## SaveManager.last_players. A gamepad is recognised by its GUID (the model, not the USB port number);
+## `guid_of` replaces Input.get_joy_guid for tests.
+static func pick_devices(saved: Array, devs: Array, guid_of := Callable()) -> Array:
+	var out: Array = [{}, {}]
+	var used := {}
+	for slot in 2:
+		var s = saved[slot] if slot < saved.size() else null
+		if typeof(s) != TYPE_DICTIONARY:
+			continue
+		for d in devs:
+			if used.has(d["id"]):
+				continue
+			var same := false
+			if s["kind"] == "kb":
+				same = d["kind"] == "kb" and d["kb"] == s["kb"]
+			elif d["kind"] == "pad":
+				var guid: String = guid_of.call(d) if guid_of.is_valid() else Input.get_joy_guid(d["dev"])
+				same = guid == s["guid"]
+			if same:
+				out[slot] = d
+				used[d["id"]] = true
+				break
+	return out
 
 
 func _refresh_devices() -> void:
@@ -111,11 +153,13 @@ func _continue() -> void:
 		_flash("Move a keyboard or gamepad to Player 1 or Player 2 first")
 		AudioManager.play("blip", -6.0)
 		return
+	var remembered := []
 	for slot in 2:
 		var d := _slot_device(-1 if slot == 0 else 1)
 		var p: PlayerSlot = Game.players[slot]
 		p.ready = false
 		if d.is_empty():
+			remembered.append(null)
 			p.active = false
 			p.device = -1
 			p.kb = false
@@ -125,9 +169,12 @@ func _continue() -> void:
 		p.color = SaveManager.prefs[slot]["color"]
 		p.easy = SaveManager.prefs[slot]["easy"]
 		if d["kind"] == "kb":
+			remembered.append({"kind": "kb", "kb": d["kb"]})
 			InputManager.assign_keyboard(slot)
 		else:
+			remembered.append({"kind": "pad", "guid": Input.get_joy_guid(d["dev"]), "name": Input.get_joy_name(d["dev"])})
 			InputManager.assign_pad(slot, d["dev"])
+	SaveManager.remember_players(remembered)
 	AudioManager.play("join", -4.0)
 	finished.emit()
 

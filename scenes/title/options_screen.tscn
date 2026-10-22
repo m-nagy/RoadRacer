@@ -50,7 +50,7 @@ text = "Controls"
 unique_name_in_owner = true
 custom_minimum_size = Vector2(860, 0)
 layout_mode = 2
-theme_override_constants/separation = 12
+theme_override_constants/separation = 8
 
 [node name="DifficultyTitle" type="Label" parent="Center/Root/GameBox"]
 layout_mode = 2
@@ -64,7 +64,7 @@ theme_override_constants/separation = 14
 
 [node name="EasyButton" type="Button" parent="Center/Root/GameBox/DifficultyRow"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(270, 62)
+custom_minimum_size = Vector2(270, 54)
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 26
@@ -72,7 +72,7 @@ text = "Easy"
 
 [node name="NormalButton" type="Button" parent="Center/Root/GameBox/DifficultyRow"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(270, 62)
+custom_minimum_size = Vector2(270, 54)
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 26
@@ -80,7 +80,7 @@ text = "Normal"
 
 [node name="HardButton" type="Button" parent="Center/Root/GameBox/DifficultyRow"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(270, 62)
+custom_minimum_size = Vector2(270, 54)
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 26
@@ -148,20 +148,38 @@ theme_override_constants/separation = 14
 
 [node name="FullscreenButton" type="Button" parent="Center/Root/GameBox/DisplayRow"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 56)
+custom_minimum_size = Vector2(0, 52)
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_font_sizes/font_size = 26
+theme_override_font_sizes/font_size = 24
 
 [node name="GraphicsButton" type="Button" parent="Center/Root/GameBox/DisplayRow"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 56)
+custom_minimum_size = Vector2(0, 52)
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_font_sizes/font_size = 26
+theme_override_font_sizes/font_size = 24
+
+[node name="AutosaveButton" type="Button" parent="Center/Root/GameBox/DisplayRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 52)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 24
+
+[node name="SaveRow" type="HBoxContainer" parent="Center/Root/GameBox"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="SaveNowButton" type="Button" parent="Center/Root/GameBox/SaveRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 52)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 24
 
 [node name="BackGame" type="Button" parent="Center/Root/GameBox"]
-custom_minimum_size = Vector2(0, 56)
+custom_minimum_size = Vector2(0, 52)
 layout_mode = 2
 theme_override_font_sizes/font_size = 26
 text = "Back"

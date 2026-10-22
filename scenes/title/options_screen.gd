@@ -2,7 +2,8 @@ class_name OptionsScreen
 extends Control
 ## Options: "Game Settings" tab (difficulty, volumes, full screen) and "Controls" tab
 ## (remap keyboard keys / gamepad buttons for each of the two player profiles).
-## Everything is saved immediately. Esc / B goes back (or cancels a pending key capture).
+## Everything is saved immediately (unless Auto-save is off: then the Save now button does it).
+## Esc / B goes back (or cancels a pending key capture).
 
 signal back
 
@@ -21,6 +22,8 @@ var _diff_buttons: Dictionary = {}
 @onready var _diff_label: Label = %DifficultyText
 @onready var _fs_button: Button = %FullscreenButton
 @onready var _gfx_button: Button = %GraphicsButton
+@onready var _autosave_button: Button = %AutosaveButton
+@onready var _save_now_button: Button = %SaveNowButton
 @onready var _capture_label: Label = %CaptureLabel
 @onready var _test_label: Label = %MonitorText
 @onready var _grid: GridContainer = %ControlsGrid
@@ -56,6 +59,16 @@ func _ready() -> void:
 		SaveManager.save()
 		AudioManager.play("select")
 		_update_labels())
+	_autosave_button.pressed.connect(func():
+		SaveManager.set_autosave(not SaveManager.autosave)
+		AudioManager.play("select")
+		_update_labels())
+	_save_now_button.pressed.connect(func():
+		SaveManager.write()
+		AudioManager.play("select")
+		_update_labels()
+		_autosave_button.grab_focus())
+	SaveManager.dirty_changed.connect(_update_labels)
 	_game_box.get_node("BackGame").pressed.connect(func(): back.emit())
 	_build_controls()
 	select_tab(0, false)
@@ -90,8 +103,12 @@ func _update_labels() -> void:
 		var mark := "● " if SaveManager.difficulty == d else "○ "
 		b.text = mark + String(d).capitalize()
 	_diff_label.text = DIFF_TEXT[SaveManager.difficulty]
-	_fs_button.text = "Full screen:  %s   (F11)" % ("ON" if Game.is_fullscreen() else "OFF")
+	_fs_button.text = "Full screen:  %s" % ("ON" if Game.is_fullscreen() else "OFF")
 	_gfx_button.text = "Graphics:  %s" % ("Low (faster)" if Game.is_low_graphics() else "Normal")
+	_autosave_button.text = "Auto-save:  %s" % ("ON" if SaveManager.autosave else "OFF")
+	_save_now_button.visible = not SaveManager.autosave   # with Auto-save on there is never anything waiting
+	_save_now_button.disabled = not SaveManager.dirty
+	_save_now_button.text = "Save now" if SaveManager.dirty else "All saved"
 
 
 # ------------------------------------------------------------ controls tab

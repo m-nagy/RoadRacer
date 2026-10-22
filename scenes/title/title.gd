@@ -88,7 +88,7 @@ func _setup_menu() -> void:
 	_menu_box.get_node("Fullscreen").pressed.connect(func():
 		Game.set_fullscreen(not Game.is_fullscreen())
 		_update_fullscreen_label())
-	_menu_box.get_node("Quit").pressed.connect(func(): get_tree().quit())
+	_menu_box.get_node("Quit").pressed.connect(Game.request_quit)
 	for b in _menu_box.get_children():
 		b.focus_entered.connect(func(): AudioManager.play("blip", -6.0))
 

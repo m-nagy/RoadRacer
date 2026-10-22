@@ -332,6 +332,8 @@ func _end_clear() -> void:
 	if next != "" and SaveManager.is_unlocked(next):
 		buttons.append(["Next Stage", func(): Game.go_to_race(next)])
 	buttons.append(["Replay Stage", func(): Game.go_to_race(_stage_id)])
+	if SaveManager.dirty:   # Auto-save is off and this clear has not been saved
+		buttons.append(["Save Now", _save_now])
 	buttons.append(["Title", Game.go_to_title])
 	var title := "STAGE CLEAR!"
 	if next == "":
@@ -339,6 +341,17 @@ func _end_clear() -> void:
 	elif Stages.is_last_in_world(_stage_id):
 		title = "WORLD CLEAR!"
 	_show_menu("clear", title, lines, buttons)
+
+
+func _save_now() -> void:
+	SaveManager.write()
+	var b := get_viewport().gui_get_focus_owner()
+	if b is Button:
+		var next := b.find_next_valid_focus()
+		b.text = "Saved"
+		b.disabled = true
+		if next != null and next != b:
+			next.grab_focus()
 
 
 func _end_fail() -> void:
