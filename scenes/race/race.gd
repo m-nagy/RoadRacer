@@ -77,7 +77,7 @@ func _ready() -> void:
 		var wx := Weather.new()
 		wx.process_mode = Node.PROCESS_MODE_PAUSABLE   # rain and HUD freeze with the game behind the pause menu
 		vp.add_child(wx)
-		wx.setup(world.stage.weather)
+		wx.setup(world.stage.weather, Game.weather_density(slots.size()), 0.7 if Game.is_low_graphics() else 1.0)
 		var hud: Hud = HUD_SCENE.instantiate()
 		hud.process_mode = Node.PROCESS_MODE_PAUSABLE
 		hud.world = world

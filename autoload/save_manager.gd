@@ -22,6 +22,7 @@ var fullscreen := true
 var difficulty := "normal"        # "easy" | "normal" | "hard"
 var music_volume := 0.8           # 0..1
 var sfx_volume := 1.0
+var graphics := "normal"          # "normal" | "low" (fewer particles, no night headlights: for slow graphics cards)
 var controls: Array = [ControlDefaults.profile(0), ControlDefaults.profile(1)]
 
 
@@ -48,6 +49,9 @@ func load_save() -> void:
 		difficulty = "normal"
 	music_volume = clampf(float(data.get("music_volume", 0.8)), 0.0, 1.0)
 	sfx_volume = clampf(float(data.get("sfx_volume", 1.0)), 0.0, 1.0)
+	graphics = str(data.get("graphics", "normal"))
+	if not ["normal", "low"].has(graphics):
+		graphics = "normal"
 	_load_controls(data.get("controls", null))
 	# JSON turns the colour index into a float (6 -> 6.0); "%" on a float is a runtime error, so
 	# convert back to int here or the car screen can't change colour.
@@ -126,7 +130,7 @@ func save() -> void:
 		push_warning("Could not write save file")
 		return
 	f.store_string(JSON.stringify({"version": VERSION, "cleared": cleared, "best": best, "prefs": prefs, "fullscreen": fullscreen,
-		"difficulty": difficulty, "music_volume": music_volume, "sfx_volume": sfx_volume, "controls": controls}))
+		"difficulty": difficulty, "music_volume": music_volume, "sfx_volume": sfx_volume, "graphics": graphics, "controls": controls}))
 	f.close()
 	# Keep the previous save as .bak, then move the finished file into place.
 	if FileAccess.file_exists(save_path):

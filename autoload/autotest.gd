@@ -23,6 +23,10 @@ var keydrive := false
 var _kd_state := {}
 var _flow_i := 0
 var diff := ""
+var gpu_mode := false   # gpu: measure and print the GPU time of every viewport (needs a real window, not --headless)
+var _gpu_viewports: Array[RID] = []
+var _gpu_sum: Array[float] = []
+var _gpu_n := 0
 var cleared_arg := ""   # cleared=city,bridge: pretend only these stages are cleared (in memory only)
 var no_time := false
 var hit_kind := ""
@@ -83,6 +87,10 @@ func _ready() -> void:
 			title_screen = int(a.get_slice("=", 1))
 		elif a.begins_with("tab="):
 			title_tab = int(a.get_slice("=", 1))
+		elif a.begins_with("graphics="):
+			SaveManager.graphics = a.get_slice("=", 1)
+		elif a == "gpu":
+			gpu_mode = true
 		elif a.begins_with("cleared="):
 			cleared_arg = a.get_slice("=", 1)
 		elif a.begins_with("diff="):
@@ -204,6 +212,7 @@ func _process(delta: float) -> void:
 			p.crashed.connect(_on_player_crashed.bind(p))
 	_t += delta
 	_sample_perf()
+	_sample_gpu()
 	if keydrive:
 		_kd("h", _t > 1.0)                         # P1 default fast key
 		_kd("d", _t > 3.0 and _t < 3.4)            # P1 default right key
@@ -309,6 +318,11 @@ func _process(delta: float) -> void:
 		for q in world.players:
 			print("[totals] P%d score=%d crashes=%d overtakes=%d state=%d d=%.0f" % [q.slot + 1, int(q.score), q.crashes, q.overtakes, q.state, q.d()])
 		print("[narrow] ticks=%d slow=%d share=%.1f%% avg_v=%.0f walls=%d" % [_narrow_ticks, _narrow_slow, 100.0 * _narrow_slow / maxf(_narrow_ticks, 1), _narrow_v / maxf(_narrow_ticks, 1), _walls_narrow])
+		if gpu_mode and _gpu_n > 0:
+			var g := "[gpu] frames=%d" % _gpu_n
+			for i in _gpu_sum.size():
+				g += "  %s=%.2f ms" % ["window" if i == 0 else "view%d" % i, _gpu_sum[i] / _gpu_n]
+			print(g)
 		print("[perf] samples=%d process_ms avg=%.3f max=%.3f | physics_ms avg=%.3f max=%.3f" % [_perf_n, _perf_proc / maxf(_perf_n, 1), _perf_proc_max, _perf_phys / maxf(_perf_n, 1), _perf_phys_max])
 		print("[autotest] finished at t=%.1f  sim_t=%.1f length=%.0f crashes=%d  v_eff=%.0f px/s  state=%d time_left=%.0f fuel=%d/%d" % [_t, world.t, world.road.length, cr, eff, wp.state, wp.time_left, world.course.pickups_taken, world.course.pickups_total])
 		get_tree().quit()
@@ -330,6 +344,24 @@ func _on_player_crashed(reason: String, impact_speed: float, p: PlayerCar) -> vo
 	if p.pilot:
 		for h in p.pilot.history.slice(-14):
 			print("   ", h)
+
+
+## GPU time (ms) per frame of the window and of every player's view; the first frame only switches
+## the measuring on.
+func _sample_gpu() -> void:
+	if not gpu_mode:
+		return
+	if _gpu_viewports.is_empty():
+		_gpu_viewports.append(get_tree().root.get_viewport_rid())
+		for sv in get_tree().current_scene.find_children("*", "SubViewport", true, false):
+			_gpu_viewports.append(sv.get_viewport_rid())
+		for rid in _gpu_viewports:
+			RenderingServer.viewport_set_measure_render_time(rid, true)
+			_gpu_sum.append(0.0)
+		return
+	_gpu_n += 1
+	for i in _gpu_viewports.size():
+		_gpu_sum[i] += RenderingServer.viewport_get_measured_render_time_gpu(_gpu_viewports[i])
 
 
 func _sample_perf() -> void:

@@ -14,7 +14,7 @@ func _init() -> void:
 
 
 ## Builds the tint and one particle emitter per layer of the weather. `density` thins the particles out.
-func setup(weather: WeatherData, density := 1.0) -> void:
+func setup(weather: WeatherData, density := 1.0, tint_scale := 1.0) -> void:
 	_tex_streak = _make_tex(2, 20)
 	_tex_dot = _make_tex(6, 6)
 	_tex_blob = _make_blob()
@@ -22,6 +22,7 @@ func setup(weather: WeatherData, density := 1.0) -> void:
 	_tint.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_tint.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_tint.color = weather.tint
+	_tint.color.a *= tint_scale
 	add_child(_tint)
 	for l in weather.layers:
 		_add(l, density)

@@ -70,7 +70,7 @@ func setup(stage_data: StageData) -> void:
 		add_child(dbg)
 	if stage.night:
 		var cm := CanvasModulate.new()
-		cm.color = Color(0.2, 0.24, 0.42)
+		cm.color = Color(0.42, 0.46, 0.62) if Game.is_low_graphics() else Color(0.2, 0.24, 0.42)   # lighter without headlights
 		add_child(cm)
 
 

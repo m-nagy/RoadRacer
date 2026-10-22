@@ -78,7 +78,7 @@ func setup(w: World, slot_idx: int, color_idx: int, easy_mode: bool, lane: int) 
 	position = Vector2(w.road.lane_x(60.0, lane), -60.0)
 	rotation = w.road.heading(60.0)
 	_last_d = 60.0
-	_light.visible = w.stage.night   # headlights only in the dark
+	_light.visible = w.stage.night and not Game.is_low_graphics()   # headlights only in the dark, and not on Low
 
 
 ## Full-lock sideways speed at a forward speed.

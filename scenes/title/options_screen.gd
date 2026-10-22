@@ -20,6 +20,7 @@ var _diff_buttons: Dictionary = {}
 @onready var _controls_box: Control = %ControlsBox
 @onready var _diff_label: Label = %DifficultyText
 @onready var _fs_button: Button = %FullscreenButton
+@onready var _gfx_button: Button = %GraphicsButton
 @onready var _capture_label: Label = %CaptureLabel
 @onready var _test_label: Label = %MonitorText
 @onready var _grid: GridContainer = %ControlsGrid
@@ -49,6 +50,11 @@ func _ready() -> void:
 		AudioManager.play("select"))
 	_fs_button.pressed.connect(func():
 		Game.set_fullscreen(not Game.is_fullscreen())
+		_update_labels())
+	_gfx_button.pressed.connect(func():
+		SaveManager.graphics = "normal" if SaveManager.graphics == "low" else "low"
+		SaveManager.save()
+		AudioManager.play("select")
 		_update_labels())
 	_game_box.get_node("BackGame").pressed.connect(func(): back.emit())
 	_build_controls()
@@ -85,6 +91,7 @@ func _update_labels() -> void:
 		b.text = mark + String(d).capitalize()
 	_diff_label.text = DIFF_TEXT[SaveManager.difficulty]
 	_fs_button.text = "Full screen:  %s   (F11)" % ("ON" if Game.is_fullscreen() else "OFF")
+	_gfx_button.text = "Graphics:  %s" % ("Low (faster)" if Game.is_low_graphics() else "Normal")
 
 
 # ------------------------------------------------------------ controls tab

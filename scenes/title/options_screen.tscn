@@ -142,10 +142,22 @@ layout_mode = 2
 theme_override_font_sizes/font_size = 24
 text = "100%"
 
-[node name="FullscreenButton" type="Button" parent="Center/Root/GameBox"]
+[node name="DisplayRow" type="HBoxContainer" parent="Center/Root/GameBox"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="FullscreenButton" type="Button" parent="Center/Root/GameBox/DisplayRow"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 56)
 layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 26
+
+[node name="GraphicsButton" type="Button" parent="Center/Root/GameBox/DisplayRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 56)
+layout_mode = 2
+size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 26
 
 [node name="BackGame" type="Button" parent="Center/Root/GameBox"]

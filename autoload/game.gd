@@ -66,6 +66,19 @@ func swatch(color_idx: int) -> Color:
 	return Color.from_hsv(fposmod(c["hue"], 1.0), clampf(c["sat"], 0.0, 1.0) * 0.9, 1.0)
 
 
+## Low graphics: fewer weather particles, no night headlights (for slow graphics cards).
+func is_low_graphics() -> bool:
+	return SaveManager.graphics == "low"
+
+
+## Share of the weather particles to create: all of them normally, fewer on Low, and fewer still in
+## split screen, where every player's view has its own.
+func weather_density(player_count: int) -> float:
+	if not is_low_graphics():
+		return 1.0
+	return 0.5 if player_count < 2 else 0.35
+
+
 func is_fullscreen() -> bool:
 	var m := DisplayServer.window_get_mode()
 	return m == DisplayServer.WINDOW_MODE_FULLSCREEN or m == DisplayServer.WINDOW_MODE_EXCLUSIVE_FULLSCREEN
