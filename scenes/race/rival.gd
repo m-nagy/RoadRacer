@@ -35,6 +35,9 @@ var _react := 0.0
 var _frames: Array = []
 var _frame_t := 0.0
 var _sprite: Sprite2D
+var _blinker_drawn := NO_BLINK   # indicator state the node was last redrawn for
+
+const NO_BLINK := -2
 
 
 func setup(kind_name: String, w: Node, lane: int, d: float, speed_mult: float) -> void:
@@ -267,7 +270,10 @@ func tick(dt: float) -> void:
 	var side_speed := (position.x - x0) / maxf(dt, 0.001) - road.slope(dd) * speed
 	var yaw := clampf(atan2(side_speed, maxf(speed, 240.0)) * 0.6, -0.25, 0.25)
 	rotation = lerp_angle(rotation, road.heading(dd) + yaw, 1.0 - exp(-10.0 * dt))
-	queue_redraw()
+	var shown := _blinker_state()
+	if shown != _blinker_drawn:
+		_blinker_drawn = shown
+		queue_redraw()
 
 
 func _change_lane(dir: int, merging := false) -> bool:
@@ -356,13 +362,18 @@ func ram_done() -> void:
 	chase = null   # a called police car rams once, then goes back to normal
 
 
-func _draw() -> void:
+## What the indicators show right now: NO_BLINK, or the side (-1 / 0 / 1) that is lit.
+func _blinker_state() -> int:
 	var on := _blink > 0.0 and int(_blink * 10.0) % 2 == 0
 	var side := _blink_dir
 	if _signal_t > 0.0 and _blink <= 0.0:
 		on = int(_frame_t * 5.0) % 2 == 0
 		side = -1
-	if on:
-		var sx := float(side) * hw
+	return side if on else NO_BLINK
+
+
+func _draw() -> void:
+	if _blinker_drawn != NO_BLINK:
+		var sx := float(_blinker_drawn) * hw
 		draw_rect(Rect2(sx - 3.0, -hh, 6.0, 8.0), Color("ffa200"))
 		draw_rect(Rect2(sx - 3.0, hh - 8.0, 6.0, 8.0), Color("ffa200"))

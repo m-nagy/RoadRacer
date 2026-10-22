@@ -36,8 +36,27 @@ var _ambulance_timer := 18.0
 var _fuelcar_timer := 6.0
 var _out_notified: Dictionary = {}
 var _finished_notified: Dictionary = {}
-var _near_obstacles: Array = []   # obstacles anywhere traffic can reach this frame
 var pickups_total := 0
+var pickups_taken := 0
+
+## Obstacles and fuel cans exist as plain data for the whole course; a node is only created while it
+## is within reach of a player (see _stream_course). `obstacles` / `pickups` hold just those live
+## nodes, always sorted by distance.
+class CourseSpec:
+	var kind := ""
+	var pos := Vector2.ZERO
+	var d := 0.0
+
+const COURSE_BEHIND := 1300.0   # live course objects reach this far behind the rearmost player...
+const COURSE_AHEAD := 3600.0    # ...and this far ahead of the front one (more than traffic can see)
+const OBSTACLE_MAX_HH := 30.0   # taller than any obstacle's half length (bounds the sorted searches)
+const RIVAL_MAX_HH := 64.0      # ...and any rival's
+
+var _obstacle_specs: Array[CourseSpec] = []
+var _pickup_specs: Array[CourseSpec] = []
+var _obstacle_next := 0         # first spec not yet streamed in
+var _pickup_next := 0
+var _by_d: Array[Rival] = []    # rivals sorted by distance, kept in step with their live positions
 
 
 func setup(stage_index: int) -> void:
@@ -57,7 +76,7 @@ func setup(stage_index: int) -> void:
 	for l in [_obstacle_layer, _pickup_layer, _rival_layer, _player_layer]:
 		add_child(l)
 	_build_course()
-	pickups_total = pickups.size()
+	pickups_total = _pickup_specs.size()
 	var dbg := DebugBoxes.new()
 	dbg.world = self
 	dbg.z_index = 50
@@ -78,6 +97,7 @@ func add_player(slot: int, color_idx: int, easy: bool, lane: int) -> PlayerCar:
 
 func begin() -> void:
 	# Populate the road ahead of every player before the lights go green.
+	_stream_course()
 	for i in 40:
 		_traffic_update(true)
 	for p in players:
@@ -104,11 +124,11 @@ func _build_course() -> void:
 			lanes.shuffle()
 			for k in count:
 				var lane: int = lanes[k]
-				var kind: String = kinds[rng.randi() % kinds.size()]
-				var o := Obstacle.new()
-				_obstacle_layer.add_child(o)
-				o.setup(kind, Vector2(road.lane_x(d, lane) + rng.randf_range(-8.0, 8.0), -d))
-				obstacles.append(o)
+				var spec := CourseSpec.new()
+				spec.kind = kinds[rng.randi() % kinds.size()]
+				spec.pos = Vector2(road.lane_x(d, lane) + rng.randf_range(-8.0, 8.0), -d)
+				spec.d = d
+				_obstacle_specs.append(spec)
 				blocked_rows.append([d, lane])
 	var f := 900.0
 	while f < length - 600.0:
@@ -122,10 +142,107 @@ func _build_course() -> void:
 				clash = true
 		if clash:
 			continue
-		var pk := Pickup.new()
-		_pickup_layer.add_child(pk)
-		pk.position = Vector2(road.lane_x(f, lane2), -f)
-		pickups.append(pk)
+		var pk := CourseSpec.new()
+		pk.pos = Vector2(road.lane_x(f, lane2), -f)
+		pk.d = f
+		_pickup_specs.append(pk)
+
+
+## Keeps live nodes for exactly the course objects within reach of the players: creates the ones
+## that came into range, frees the ones left behind. The window only ever moves forward.
+func _stream_course() -> void:
+	if players.is_empty():
+		return
+	var lo := 1.0e12
+	var hi := -1.0e12
+	for p in players:
+		lo = minf(lo, p.d() - COURSE_BEHIND)
+		hi = maxf(hi, p.d() + COURSE_AHEAD)
+	for i in range(obstacles.size() - 1, -1, -1):
+		if obstacles[i].d() <= lo:
+			obstacles[i].queue_free()
+			obstacles.remove_at(i)
+	for i in range(pickups.size() - 1, -1, -1):
+		if pickups[i].d() <= lo:
+			pickups[i].queue_free()
+			pickups.remove_at(i)
+	while _obstacle_next < _obstacle_specs.size() and _obstacle_specs[_obstacle_next].d < hi:
+		var s := _obstacle_specs[_obstacle_next]
+		_obstacle_next += 1
+		if s.d > lo:
+			var o := Obstacle.new()
+			_obstacle_layer.add_child(o)
+			o.setup(s.kind, s.pos)
+			obstacles.append(o)
+	while _pickup_next < _pickup_specs.size() and _pickup_specs[_pickup_next].d < hi:
+		var s2 := _pickup_specs[_pickup_next]
+		_pickup_next += 1
+		if s2.d > lo:
+			var pk := Pickup.new()
+			_pickup_layer.add_child(pk)
+			pk.position = s2.pos
+			pickups.append(pk)
+
+
+## Adds a hazard on the fly (used by the test bot).
+func place_obstacle(kind: String, pos: Vector2) -> void:
+	var o := Obstacle.new()
+	_obstacle_layer.add_child(o)
+	o.setup(kind, pos)
+	obstacles.insert(_first_obstacle_at(o.d()), o)
+
+
+## Index of the first live obstacle at or beyond distance x (they are sorted by distance).
+func _first_obstacle_at(x: float) -> int:
+	var lo := 0
+	var hi := obstacles.size()
+	while lo < hi:
+		var mid := (lo + hi) >> 1
+		if obstacles[mid].d() < x:
+			lo = mid + 1
+		else:
+			hi = mid
+	return lo
+
+
+## Same for rivals.
+func _first_rival_at(x: float) -> int:
+	var lo := 0
+	var hi := _by_d.size()
+	while lo < hi:
+		var mid := (lo + hi) >> 1
+		if _by_d[mid].d() < x:
+			lo = mid + 1
+		else:
+			hi = mid
+	return lo
+
+
+## Restores the sorted order after any rival has moved (nearly sorted already, so this is cheap).
+func _resort_rivals() -> void:
+	for i in range(1, _by_d.size()):
+		var r := _by_d[i]
+		var rd := r.d()
+		var j := i - 1
+		while j >= 0 and _by_d[j].d() > rd:
+			_by_d[j + 1] = _by_d[j]
+			j -= 1
+		_by_d[j + 1] = r
+
+
+## Moves one rival that just changed distance to its place in the sorted list.
+func _reposition_rival(r: Rival) -> void:
+	var i := _by_d.find(r)
+	if i < 0:
+		return
+	var rd := r.d()
+	while i + 1 < _by_d.size() and _by_d[i + 1].d() < rd:
+		_by_d[i] = _by_d[i + 1]
+		i += 1
+	while i > 0 and _by_d[i - 1].d() > rd:
+		_by_d[i] = _by_d[i - 1]
+		i -= 1
+	_by_d[i] = r
 
 
 func _near_marker(d: float) -> bool:
@@ -154,11 +271,12 @@ func lead_speed(r: Rival) -> float:
 func follow_limit(r: Rival) -> float:
 	var rd := r.d()
 	var limit := INF
-	for o in rivals:
-		if o == r:
-			continue
+	for i in range(_first_rival_at(rd), _by_d.size()):
+		var o := _by_d[i]
 		var dy: float = o.d() - rd
-		if dy <= 0.0 or dy > 700.0 or not _paths_touch(r, o):
+		if dy > 700.0:
+			break
+		if o == r or dy <= 0.0 or not _paths_touch(r, o):
 			continue
 		var gap: float = dy - o.hh - r.hh - FOLLOW_GAP
 		var v: float = o.speed + sqrt(2.0 * FOLLOW_DECEL * gap) if gap > 0.0 else maxf(o.speed - 60.0, 0.0)
@@ -201,15 +319,23 @@ func rival_lanes(r: Rival) -> Array:
 ## Cars further back than `min_d` are left out (they give way to us, not we to them).
 func lanes_blocked(d_lo: float, d_hi: float, skip: Rival, min_d := -INF) -> Dictionary:
 	var used := {}
-	for o in rivals:
-		if o == skip or o.kind == "fuelcar" or o.d() < min_d:
+	for i in range(_first_rival_at(maxf(d_lo - RIVAL_MAX_HH, min_d)), _by_d.size()):
+		var o := _by_d[i]
+		var od := o.d()
+		if od >= d_hi + RIVAL_MAX_HH:
+			break
+		if o == skip or o.kind == "fuelcar" or od < min_d:
 			continue
-		if o.d() + o.hh > d_lo and o.d() - o.hh < d_hi:
+		if od + o.hh > d_lo and od - o.hh < d_hi:
 			for l in rival_lanes(o):
 				used[l] = true
-	for ob in _near_obstacles:
-		if ob.d() + ob.hh > d_lo and ob.d() - ob.hh < d_hi:
-			used[road.nearest_lane(ob.d(), ob.position.x)] = true
+	for i in range(_first_obstacle_at(d_lo - OBSTACLE_MAX_HH), obstacles.size()):
+		var ob: Obstacle = obstacles[i]
+		var obd: float = ob.d()
+		if obd >= d_hi + OBSTACLE_MAX_HH:
+			break
+		if obd + ob.hh > d_lo and obd - ob.hh < d_hi:
+			used[road.nearest_lane(obd, ob.position.x)] = true
 	return used
 
 
@@ -231,8 +357,12 @@ func lane_closes_road(r: Rival, lane: int) -> bool:
 
 ## Is any other car (not counting `skip`, or cars further back than min_d) between two distances?
 func _car_between(d_lo: float, d_hi: float, skip: Rival, min_d: float) -> bool:
-	for o in rivals:
-		if o != skip and o.kind != "fuelcar" and o.d() >= min_d and o.d() + o.hh > d_lo and o.d() - o.hh < d_hi:
+	for i in range(_first_rival_at(maxf(d_lo - RIVAL_MAX_HH, min_d)), _by_d.size()):
+		var o := _by_d[i]
+		var od := o.d()
+		if od >= d_hi + RIVAL_MAX_HH:
+			break
+		if o != skip and o.kind != "fuelcar" and od >= min_d and od + o.hh > d_lo and od - o.hh < d_hi:
 			return true
 	return false
 
@@ -249,11 +379,12 @@ func wall_limit(r: Rival) -> float:
 		return INF
 	var mine := rival_lanes(r)
 	var limit := INF
-	for o in rivals:
-		if o == r or o.kind == "fuelcar" or o.speed < 40.0:
-			continue
+	for i in range(_first_rival_at(rd), _by_d.size()):
+		var o := _by_d[i]
 		var dy: float = o.d() - rd
-		if dy <= 0.0 or dy > WALL_LOOK:
+		if dy > WALL_LOOK:
+			break
+		if o == r or o.kind == "fuelcar" or o.speed < 40.0 or dy <= 0.0:
 			continue
 		var lo: float = o.d() - o.hh - WALL_GAP
 		var used := lanes_blocked(lo, o.d() + o.hh + WALL_GAP + WALL_AHEAD, r, rd)
@@ -319,9 +450,12 @@ func lane_is_clear(r: Rival, lane: int, span: float, ahead := 420.0) -> bool:
 
 ## Is there an obstacle (any kind, oil included) in this lane between two distances?
 func lane_has_obstacle(lane: int, d_from: float, d_to: float) -> bool:
-	for ob in _near_obstacles:
+	for i in range(_first_obstacle_at(d_from), obstacles.size()):
+		var ob: Obstacle = obstacles[i]
 		var od: float = ob.d()
-		if od > d_from and od < d_to and absf(ob.position.x - road.lane_x(od, lane)) < 46.0:
+		if od >= d_to:
+			break
+		if od > d_from and absf(ob.position.x - road.lane_x(od, lane)) < 46.0:
 			return true
 	return false
 
@@ -329,9 +463,12 @@ func lane_has_obstacle(lane: int, d_from: float, d_to: float) -> bool:
 ## First obstacle ahead that a rival would drive over (in its current or target lane).
 func obstacle_ahead(r: Rival, dist: float) -> Obstacle:
 	var best: Obstacle = null
-	for o in _near_obstacles:
+	for i in range(_first_obstacle_at(r.d() - OBSTACLE_MAX_HH), obstacles.size()):
+		var o: Obstacle = obstacles[i]
 		var dy: float = o.d() - r.d()
-		if dy < -o.hh or dy > dist + r.hh:
+		if dy > dist + r.hh:
+			break
+		if dy < -o.hh:
 			continue
 		var gap: float = r.hw + o.hw + 22.0
 		if absf(u_of(o) - u_of(r)) < gap or absf(o.position.x - road.lane_x(o.d(), r.target_lane)) < gap:
@@ -369,9 +506,11 @@ func _physics_process(delta: float) -> void:
 	if not running:
 		return
 	t += dt
-	_refresh_near_obstacles()
+	_stream_course()
+	_resort_rivals()
 	for r in rivals:
 		r.tick(dt)
+		_reposition_rival(r)
 	_separate_rivals()
 	_resolve_collisions()
 	_update_progress()
@@ -391,21 +530,6 @@ func _physics_process(delta: float) -> void:
 			AudioManager.engine_stop(p.slot)
 			popup.emit(p.slot, "OUT OF FUEL", "bad")
 			player_out.emit(p.slot)
-
-
-func _refresh_near_obstacles() -> void:
-	_near_obstacles.clear()
-	if players.is_empty():
-		return
-	var lo := 1.0e12
-	var hi := -1.0e12
-	for p in players:
-		lo = minf(lo, p.d() - 1300.0)
-		hi = maxf(hi, p.d() + 3600.0)
-	for ob in obstacles:
-		var od: float = ob.d()
-		if od > lo and od < hi:
-			_near_obstacles.append(ob)
 
 
 ## Safety net: rival cars never overlap. A car that slid into another during a lane change goes
@@ -496,6 +620,7 @@ func _resolve_collisions() -> void:
 				popup.emit(p.slot, "FUEL +10", "good")
 				AudioManager.play("fuel")
 				pickups.erase(pk)
+				pickups_taken += 1
 				pk.queue_free()
 	# Players nudge each other but never crash.
 	if players.size() == 2:
@@ -522,14 +647,14 @@ func _resolve_collisions() -> void:
 ## Exact overlap test between player p and another oriented box. Returns (sideways overlap,
 ## lengthwise overlap) in p's own frame, both > 0 only when the boxes really touch.
 func overlap(p: PlayerCar, pos: Vector2, ohw: float, ohh: float, orot: float) -> Vector2:
+	# Broad phase: boxes whose bounding circles do not meet cannot touch.
+	var reach := Vector2(p.hw, p.hh).length() + Vector2(ohw, ohh).length() + 1.0
+	if p.position.distance_squared_to(pos) > reach * reach:
+		return Vector2.ZERO
 	var a := _corners(p.position, p.rotation, p.hw, p.hh)
 	var b := _corners(pos, orot, ohw, ohh)
-	for rot in [p.rotation, orot]:
-		for axis in [Vector2(cos(rot), sin(rot)), Vector2(-sin(rot), cos(rot))]:
-			var ra := _project(a, axis)
-			var rb := _project(b, axis)
-			if ra.y < rb.x or rb.y < ra.x:
-				return Vector2.ZERO  # a separating axis: they do not touch
+	if _separated(a, b, p.rotation) or _separated(a, b, orot):
+		return Vector2.ZERO  # a separating axis: they do not touch
 	var rel := (pos - p.position).rotated(-p.rotation)
 	var dr := orot - p.rotation
 	var ex := absf(ohw * cos(dr)) + absf(ohh * sin(dr))
@@ -537,12 +662,32 @@ func overlap(p: PlayerCar, pos: Vector2, ohw: float, ohh: float, orot: float) ->
 	return Vector2(maxf(p.hw + ex - absf(rel.x), 0.01), maxf(p.hh + ey - absf(rel.y), 0.01))
 
 
-func _corners(c: Vector2, rot: float, ohw: float, ohh: float) -> Array:
-	return [c + Vector2(-ohw, -ohh).rotated(rot), c + Vector2(ohw, -ohh).rotated(rot),
-		c + Vector2(ohw, ohh).rotated(rot), c + Vector2(-ohw, ohh).rotated(rot)]
+## Do the two boxes have a gap along either axis of a box turned by `rot`?
+func _separated(a: PackedVector2Array, b: PackedVector2Array, rot: float) -> bool:
+	var c := cos(rot)
+	var s := sin(rot)
+	var ax := Vector2(c, s)
+	var ay := Vector2(-s, c)
+	var ra := _project(a, ax)
+	var rb := _project(b, ax)
+	if ra.y < rb.x or rb.y < ra.x:
+		return true
+	ra = _project(a, ay)
+	rb = _project(b, ay)
+	return ra.y < rb.x or rb.y < ra.x
 
 
-func _project(pts: Array, axis: Vector2) -> Vector2:
+func _corners(c: Vector2, rot: float, ohw: float, ohh: float) -> PackedVector2Array:
+	var out := PackedVector2Array()
+	out.resize(4)
+	out[0] = c + Vector2(-ohw, -ohh).rotated(rot)
+	out[1] = c + Vector2(ohw, -ohh).rotated(rot)
+	out[2] = c + Vector2(ohw, ohh).rotated(rot)
+	out[3] = c + Vector2(-ohw, ohh).rotated(rot)
+	return out
+
+
+func _project(pts: PackedVector2Array, axis: Vector2) -> Vector2:
 	var lo := INF
 	var hi := -INF
 	for q in pts:
@@ -669,6 +814,7 @@ func _update_progress() -> void:
 		if s >= 0 and d >= road.shortcuts[s]["d1"] - 50.0:  # nose reaches the tunnel
 			var target: float = road.shortcuts[s]["exit_d"]
 			p.teleport_to(target)
+			_stream_course()
 			p.score += 1000.0
 			popup.emit(p.slot, "SHORTCUT!", "good")
 			AudioManager.play("whoosh")
@@ -847,6 +993,7 @@ func _spawn_rival(kind: String, d: float, lane: int) -> Rival:
 	_rival_layer.add_child(r)
 	r.setup(kind, self, lane, d, stage["traffic"]["speed"])
 	rivals.append(r)
+	_by_d.append(r)
 	for p in players:
 		r.was_ahead[p.slot] = r.d() > p.d()
 	return r
@@ -854,6 +1001,7 @@ func _spawn_rival(kind: String, d: float, lane: int) -> Rival:
 
 func _remove_rival(r: Rival) -> void:
 	rivals.erase(r)
+	_by_d.erase(r)
 	r.queue_free()
 
 
