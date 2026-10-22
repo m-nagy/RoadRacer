@@ -54,7 +54,7 @@ static func facts(stage: StageData) -> String:
 
 ## A plain picture of the road in the stage's own colours, for a stage that has no screenshot yet.
 func _fallback(stage: StageData) -> Texture2D:
-	var img := Image.create(32, 18, false, Image.FORMAT_RGB8)
+	var img := Image.create_empty(32, 18, false, Image.FORMAT_RGB8)
 	img.fill(stage.ground)
 	for y in 18:
 		for x in range(9, 23):

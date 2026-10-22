@@ -52,23 +52,48 @@ func setup(road: Road, weather: WeatherData, rng_seed: int, puff_scale := 1.0) -
 		d = b.d1 + (b.d1 - b.d0) * (1.0 - cover) / cover * rng.randf_range(0.7, 1.3)
 
 
-## Soft, cloud-like puff: seamless noise under a round falloff.
+## Soft, cloud-like puff: soft noise under a round falloff. The noise is made here (value noise, three
+## octaves) so the game does not need the engine's noise module.
 func _make_texture(rng_seed: int) -> ImageTexture:
-	var noise := FastNoiseLite.new()
-	noise.seed = rng_seed
-	noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
-	noise.frequency = 0.035
-	noise.fractal_octaves = 3
-	var src := noise.get_seamless_image(TEX, TEX, false)
-	var img := Image.create(TEX, TEX, false, Image.FORMAT_RGBA8)
+	var img := Image.create_empty(TEX, TEX, false, Image.FORMAT_RGBA8)
 	var c := (TEX - 1) * 0.5
 	for y in TEX:
 		for x in TEX:
 			var r := Vector2(x - c, y - c).length() / c
 			var fall := 1.0 - smoothstep(0.25, 1.0, r)
-			var n := src.get_pixel(x, y).r
+			var n := _fractal(x / 24.0, y / 24.0, rng_seed)
 			img.set_pixel(x, y, Color(1, 1, 1, clampf(fall * (0.35 + 0.9 * n), 0.0, 1.0)))
 	return ImageTexture.create_from_image(img)
+
+
+## 0..1 noise from three octaves of value noise.
+static func _fractal(x: float, y: float, rng_seed: int) -> float:
+	var sum := 0.0
+	var amp := 0.5
+	var f := 1.0
+	for o in 3:
+		sum += amp * _value(x * f, y * f, rng_seed + o * 101)
+		amp *= 0.5
+		f *= 2.0
+	return sum / 0.875
+
+
+static func _value(x: float, y: float, rng_seed: int) -> float:
+	var xi := floori(x)
+	var yi := floori(y)
+	var fx := smoothstep(0.0, 1.0, x - xi)
+	var fy := smoothstep(0.0, 1.0, y - yi)
+	var a := _hash(xi, yi, rng_seed)
+	var b := _hash(xi + 1, yi, rng_seed)
+	var c := _hash(xi, yi + 1, rng_seed)
+	var d := _hash(xi + 1, yi + 1, rng_seed)
+	return lerpf(lerpf(a, b, fx), lerpf(c, d, fx), fy)
+
+
+static func _hash(x: int, y: int, rng_seed: int) -> float:
+	var h := (x * 374761393 + y * 668265263 + rng_seed * 2246822519) & 0x7fffffff
+	h = ((h ^ (h >> 13)) * 1274126177) & 0x7fffffff
+	return float(h & 0xffff) / 65535.0
 
 
 ## A distance inside the first bank (for the Stage Select picture); -1 when there are no banks.
