@@ -6,17 +6,8 @@ extends Node2D
 var hw := 17.0
 var hh := 20.0
 var _t := 0.0
-var _glow: Node2D
-var _can: Node2D
-
-
-func _ready() -> void:
-	_glow = Node2D.new()
-	_glow.draw.connect(_draw_glow)
-	add_child(_glow)
-	_can = Node2D.new()
-	_can.draw.connect(_draw_can)
-	add_child(_can)
+@onready var _glow: Node2D = $Glow
+@onready var _can: Node2D = $Can
 
 
 func d() -> float:

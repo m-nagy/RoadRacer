@@ -3,6 +3,7 @@ extends RefCounted
 ## The cars sharing the road: spawning and removing them around the players, the special arrivals
 ## (ambulance, super car, called police) and the sirens.
 
+const RIVAL := preload("res://scenes/race/rival.tscn")
 const POLICE_BEHIND := 470.0   # a called police car enters this far behind the player (just out of view)
 const NARROW_TRAFFIC := 0.3    # traffic on roads of two lanes or fewer, as a share of the stage's density
 
@@ -191,7 +192,7 @@ func update_sirens() -> void:
 
 
 func spawn_rival(kind: String, d: float, lane: int) -> Rival:
-	var r := Rival.new()
+	var r: Rival = RIVAL.instantiate()
 	rival_layer.add_child(r)
 	r.setup(kind, world, lane, d, stage.traffic.speed)
 	rivals.append(r)

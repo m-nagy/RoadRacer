@@ -56,8 +56,8 @@ var braking := false        # brake lights on (auto-brake or the brake key)
 
 var _crash_t := 0.0
 var _last_d := 0.0
-var _sprite: Sprite2D
-var _light: PointLight2D
+@onready var _sprite: Sprite2D = $Sprite
+@onready var _light: PointLight2D = $Headlight
 var _wobble := 0.0
 var _super_visual := false
 
@@ -69,35 +69,16 @@ func setup(w: World, slot_idx: int, color_idx: int, easy_mode: bool, lane: int) 
 	grip = w.stage.grip * w.stage.weather.grip
 	hw = CarDefs.PLAYER.hw
 	hh = CarDefs.PLAYER.hh
-	_sprite = Sprite2D.new()
 	_sprite.texture = CarDefs.PLAYER.texture
 	_sprite.scale = Vector2.ONE * CarDefs.PLAYER.scale
 	_sprite.material = Game.make_car_material(color_idx)
-	add_child(_sprite)
 	if easy:
 		pilot = AutoPilot.new()
 		pilot.set_stagger(slot_idx + 1)  # the two players plan on different ticks
 	position = Vector2(w.road.lane_x(60.0, lane), -60.0)
 	rotation = w.road.heading(60.0)
 	_last_d = 60.0
-	if w.stage.night:
-		_light = PointLight2D.new()
-		var g := GradientTexture2D.new()
-		g.fill = GradientTexture2D.FILL_RADIAL
-		g.fill_from = Vector2(0.5, 0.5)
-		g.fill_to = Vector2(1.0, 0.5)
-		g.width = 256
-		g.height = 256
-		var grad := Gradient.new()
-		grad.set_color(0, Color.WHITE)
-		grad.set_color(1, Color(1, 1, 1, 0))
-		g.gradient = grad
-		_light.texture = g
-		_light.texture_scale = 3.2
-		_light.position = Vector2(0, -170)
-		_light.energy = 1.1
-		_light.color = Color("fff1c4")
-		add_child(_light)
+	_light.visible = w.stage.night   # headlights only in the dark
 
 
 ## Full-lock sideways speed at a forward speed.

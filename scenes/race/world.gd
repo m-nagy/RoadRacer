@@ -14,6 +14,8 @@ signal shortcut_taken(slot: int)
 signal player_finished(slot: int)
 signal player_out(slot: int)
 
+const PLAYER_CAR := preload("res://scenes/race/player_car.tscn")
+
 var stage: StageData
 var level: DifficultyLevel     # difficulty settings (see Difficulty)
 var level_name := "normal"
@@ -73,7 +75,7 @@ func setup(stage_data: StageData) -> void:
 
 
 func add_player(slot: int, color_idx: int, easy: bool, lane: int) -> PlayerCar:
-	var p := PlayerCar.new()
+	var p: PlayerCar = PLAYER_CAR.instantiate()
 	_player_layer.add_child(p)
 	p.setup(self, slot, color_idx, easy, lane)
 	p.start_time = start_time

@@ -39,7 +39,7 @@ var _ram_cd := 0.0
 var _react := 0.0
 var _frames: Array[Texture2D] = []
 var _frame_t := 0.0
-var _sprite: Sprite2D
+@onready var _sprite: Sprite2D = $Sprite
 var _blinker_drawn := NO_BLINK   # indicator state the node was last redrawn for
 
 const NO_BLINK := -2
@@ -62,10 +62,8 @@ func setup(kind_name: String, w: World, lane: int, d: float, speed_mult: float) 
 	_timer = randf_range(1.5, 4.0)
 	position = Vector2(w.road.lane_x(d, lane), -d)
 	rotation = w.road.heading(d)
-	_sprite = Sprite2D.new()
 	_sprite.texture = def.texture
 	_sprite.scale = Vector2.ONE * def.scale
-	add_child(_sprite)
 	_frames = def.frames
 	if kind == "fuelcar":
 		var m := ShaderMaterial.new()

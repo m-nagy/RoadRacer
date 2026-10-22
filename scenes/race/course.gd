@@ -11,6 +11,8 @@ class CourseSpec:
 
 
 const NARROW_SPACING := 2.5     # obstacles are this many times further apart on roads of two lanes or fewer
+const OBSTACLE := preload("res://scenes/race/obstacle.tscn")
+const PICKUP := preload("res://scenes/race/pickup.tscn")
 const COURSE_BEHIND := 1300.0   # live course objects reach this far behind the rearmost player...
 const COURSE_AHEAD := 3600.0    # ...and this far ahead of the front one (more than traffic can see)
 
@@ -122,7 +124,7 @@ func stream() -> void:
 		var s := _obstacle_specs[_obstacle_next]
 		_obstacle_next += 1
 		if s.d > lo:
-			var o := Obstacle.new()
+			var o: Obstacle = OBSTACLE.instantiate()
 			obstacle_layer.add_child(o)
 			o.setup(s.kind, s.pos)
 			obstacles.append(o)
@@ -130,7 +132,7 @@ func stream() -> void:
 		var s2 := _pickup_specs[_pickup_next]
 		_pickup_next += 1
 		if s2.d > lo:
-			var pk := Pickup.new()
+			var pk: Pickup = PICKUP.instantiate()
 			pickup_layer.add_child(pk)
 			pk.position = s2.pos
 			pickups.append(pk)
@@ -138,7 +140,7 @@ func stream() -> void:
 
 ## Adds a hazard on the fly (used by the test bot).
 func place_obstacle(kind: String, pos: Vector2) -> void:
-	var o := Obstacle.new()
+	var o: Obstacle = OBSTACLE.instantiate()
 	obstacle_layer.add_child(o)
 	o.setup(kind, pos)
 	obstacles.insert(world.query.first_obstacle_at(o.d()), o)
