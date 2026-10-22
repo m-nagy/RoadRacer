@@ -32,4 +32,4 @@ module_svg_enabled = "yes"              # the default theme's icons
 module_webp_enabled = "yes"             # lossless textures are stored as WebP
 module_ogg_enabled = "yes"
 module_vorbis_enabled = "yes"           # music and impact sounds (.ogg)
-module_minimp3_enabled = "yes"          # siren sounds (.mp3)
+module_mp3_enabled = "yes"          # siren sounds (.mp3)

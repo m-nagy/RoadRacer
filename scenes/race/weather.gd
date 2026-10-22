@@ -31,7 +31,7 @@ func setup(weather: WeatherData, density := 1.0, tint_scale := 1.0) -> void:
 
 
 func _make_tex(w: int, h: int) -> ImageTexture:
-	var img := Image.create(w, h, false, Image.FORMAT_RGBA8)
+	var img := Image.create_empty(w, h, false, Image.FORMAT_RGBA8)
 	img.fill(Color.WHITE)
 	return ImageTexture.create_from_image(img)
 

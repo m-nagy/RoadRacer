@@ -25,11 +25,11 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Cache the template
         id: cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: template
           key: template-${{ env.GODOT_VERSION }}-${{ hashFiles('.github/godot/custom.py') }}
@@ -55,7 +55,7 @@ jobs:
           cp bin/godot.windows.template_release.x86_64.exe ../template/windows_release_x86_64.exe
           ls -l ../template
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: custom-template
           path: template/windows_release_x86_64.exe
@@ -68,10 +68,10 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Cache Godot downloads
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/godot-download
           key: godot-${{ env.GODOT_VERSION }}
@@ -97,7 +97,7 @@ jobs:
 
       - name: Get the custom template
         continue-on-error: true
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: custom-template
           path: custom-template
@@ -148,7 +148,7 @@ jobs:
             echo "- RoadRacer.exe: $(du -h RoadRacer.exe | cut -f1), RoadRacer-windows.zip: $(du -h RoadRacer-windows.zip | cut -f1)"
           } >> "$GITHUB_STEP_SUMMARY"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: RoadRacer-windows
           path: build/RoadRacer-windows.zip
@@ -157,7 +157,7 @@ jobs:
     needs: windows
     runs-on: windows-latest
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v7
         with:
           name: RoadRacer-windows
 
@@ -179,7 +179,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v7
         with:
           name: RoadRacer-windows
 
