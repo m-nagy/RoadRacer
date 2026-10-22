@@ -49,7 +49,8 @@ jobs:
           git clone --depth 1 --branch "${GODOT_VERSION}-stable" https://github.com/godotengine/godot.git godot-src
           cp .github/godot/custom.py godot-src/custom.py
           cd godot-src
-          scons platform=windows arch=x86_64 use_mingw=yes profile=custom.py -j"$(nproc)"
+          # d3d12 / winrt must be on the command line: Godot's Windows platform flags force d3d12=yes over the profile
+          scons platform=windows arch=x86_64 use_mingw=yes d3d12=no winrt=no profile=custom.py -j"$(nproc)"
           mkdir -p ../template
           cp bin/godot.windows.template_release.x86_64.exe ../template/windows_release_x86_64.exe
           ls -l ../template
