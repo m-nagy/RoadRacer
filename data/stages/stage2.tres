@@ -6,6 +6,7 @@
 [ext_resource type="Script" path="res://data/stage_data.gd" id="4_lyoij"]
 [ext_resource type="Script" path="res://data/shortcut_data.gd" id="5_sy4ij"]
 [ext_resource type="Script" path="res://data/traffic_data.gd" id="6_2yo73"]
+[ext_resource type="Resource" path="res://data/weather/leaves.tres" id="w_leaves"]
 
 [sub_resource type="Resource" id="Resource_pb30l"]
 script = ExtResource("1_0j4sg")
@@ -52,7 +53,7 @@ name = "Countryside"
 id = "country"
 rng_seed = 15851
 theme = "country"
-weather = "leaves"
+weather = ExtResource("w_leaves")
 length = 80000.0
 lanes = Array[ExtResource("2_3n0em")]([SubResource("Resource_nstdo"), SubResource("Resource_dkg1w"), SubResource("Resource_ql86d")])
 curve = Array[ExtResource("1_0j4sg")]([SubResource("Resource_pb30l"), SubResource("Resource_jacvd")])

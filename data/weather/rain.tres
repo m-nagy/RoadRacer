@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="WeatherData" format=3]
+
+[ext_resource type="Script" path="res://data/weather_layer.gd" id="1_emo1d"]
+[ext_resource type="Script" path="res://data/weather_data.gd" id="2_qix8h"]
+
+[sub_resource type="Resource" id="Resource_8j7cm"]
+script = ExtResource("1_emo1d")
+amount = 260
+lifetime = 0.55
+direction = Vector2(-0.2, 1)
+speed = 1100.0
+color = Color(0.7, 0.8, 1, 0.55)
+
+[resource]
+script = ExtResource("2_qix8h")
+id = "rain"
+label = "Rain"
+grip = 0.7
+tint = Color(0.05, 0.08, 0.2, 0.18)
+layers = Array[ExtResource("1_emo1d")]([SubResource("Resource_8j7cm")])

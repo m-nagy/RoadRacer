@@ -65,7 +65,7 @@ func setup(w: World, slot_idx: int, color_idx: int, easy_mode: bool, lane: int) 
 	world = w
 	slot = slot_idx
 	easy = easy_mode
-	grip = w.stage.grip
+	grip = w.stage.grip * w.stage.weather.grip
 	hw = CarDefs.PLAYER.hw
 	hh = CarDefs.PLAYER.hh
 	_sprite = Sprite2D.new()

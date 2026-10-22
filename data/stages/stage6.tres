@@ -6,6 +6,7 @@
 [ext_resource type="Script" path="res://data/stage_data.gd" id="4_tvnbb"]
 [ext_resource type="Script" path="res://data/shortcut_data.gd" id="5_oliyh"]
 [ext_resource type="Script" path="res://data/traffic_data.gd" id="6_jr6vq"]
+[ext_resource type="Resource" path="res://data/weather/rain.tres" id="w_rain"]
 
 [sub_resource type="Resource" id="Resource_8tilj"]
 script = ExtResource("1_7ctg7")
@@ -65,7 +66,7 @@ name = "Rainy Night City"
 id = "night_city"
 rng_seed = 47527
 theme = "night"
-weather = "rain"
+weather = ExtResource("w_rain")
 night = true
 length = 120000.0
 lanes = Array[ExtResource("2_2mcn0")]([SubResource("Resource_w3awm"), SubResource("Resource_pmesl"), SubResource("Resource_gp5gb"), SubResource("Resource_m0vl8")])
@@ -79,5 +80,4 @@ obstacles = SubResource("Resource_jvehw")
 fuel = 0.85
 v_slow = 318.0
 v_fast = 449.0
-grip = 0.7
 shortcuts = Array[ExtResource("5_oliyh")]([SubResource("Resource_hjrie"), SubResource("Resource_u7x8p")])

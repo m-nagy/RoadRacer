@@ -6,6 +6,7 @@
 [ext_resource type="Script" path="res://data/stage_data.gd" id="4_033ch"]
 [ext_resource type="Script" path="res://data/shortcut_data.gd" id="5_ogw4u"]
 [ext_resource type="Script" path="res://data/traffic_data.gd" id="6_sj777"]
+[ext_resource type="Resource" path="res://data/weather/snow.tres" id="w_snow"]
 
 [sub_resource type="Resource" id="Resource_onjvv"]
 script = ExtResource("1_h57n8")
@@ -62,7 +63,7 @@ name = "Snowy Mountains"
 id = "snow"
 rng_seed = 39608
 theme = "snow"
-weather = "snow"
+weather = ExtResource("w_snow")
 length = 110000.0
 lanes = Array[ExtResource("2_kbdgb")]([SubResource("Resource_2uogx"), SubResource("Resource_1m6bu"), SubResource("Resource_frbke")])
 curve = Array[ExtResource("1_h57n8")]([SubResource("Resource_onjvv"), SubResource("Resource_27m8r")])
@@ -75,5 +76,4 @@ obstacles = SubResource("Resource_6xlcw")
 fuel = 0.9
 v_slow = 302.0
 v_fast = 433.0
-grip = 0.65
 shortcuts = Array[ExtResource("5_ogw4u")]([SubResource("Resource_avngn"), SubResource("Resource_bfall")])

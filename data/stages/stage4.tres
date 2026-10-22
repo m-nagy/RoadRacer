@@ -6,6 +6,7 @@
 [ext_resource type="Script" path="res://data/stage_data.gd" id="4_xf50q"]
 [ext_resource type="Script" path="res://data/shortcut_data.gd" id="5_yppx2"]
 [ext_resource type="Script" path="res://data/traffic_data.gd" id="6_poqpi"]
+[ext_resource type="Resource" path="res://data/weather/sand.tres" id="w_sand"]
 
 [sub_resource type="Resource" id="Resource_htaoj"]
 script = ExtResource("1_t8bde")
@@ -59,7 +60,7 @@ name = "Desert Run"
 id = "desert"
 rng_seed = 31689
 theme = "desert"
-weather = "sand"
+weather = ExtResource("w_sand")
 length = 100000.0
 lanes = Array[ExtResource("2_h885p")]([SubResource("Resource_4qg83"), SubResource("Resource_nur3n"), SubResource("Resource_lcucx"), SubResource("Resource_c2x85")])
 curve = Array[ExtResource("1_t8bde")]([SubResource("Resource_htaoj"), SubResource("Resource_k3h7q")])
@@ -72,5 +73,4 @@ obstacles = SubResource("Resource_12uks")
 fuel = 0.9
 v_slow = 329.0
 v_fast = 487.0
-grip = 0.95
 shortcuts = Array[ExtResource("5_yppx2")]([SubResource("Resource_r4kis")])

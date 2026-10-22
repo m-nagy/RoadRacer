@@ -91,7 +91,7 @@ func begin() -> void:
 
 
 func wind_at(_d: float) -> float:
-	var strength := stage.drift
+	var strength := stage.drift + stage.weather.wind
 	if strength <= 0.0:
 		return 0.0
 	return strength * sin(t * 0.9) * (0.5 + 0.5 * sin(t * 0.37 + 1.0))

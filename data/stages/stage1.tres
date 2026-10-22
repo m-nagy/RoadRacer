@@ -6,6 +6,7 @@
 [ext_resource type="Script" path="res://data/stage_data.gd" id="4_ivf0u"]
 [ext_resource type="Script" path="res://data/shortcut_data.gd" id="5_lw6or"]
 [ext_resource type="Script" path="res://data/traffic_data.gd" id="6_455ic"]
+[ext_resource type="Resource" path="res://data/weather/none.tres" id="w_none"]
 
 [sub_resource type="Resource" id="Resource_kcxmc"]
 script = ExtResource("1_5sa5g")
@@ -41,6 +42,7 @@ script = ExtResource("4_ivf0u")
 name = "City Centre"
 id = "city"
 rng_seed = 7932
+weather = ExtResource("w_none")
 lanes = Array[ExtResource("2_2euu0")]([SubResource("Resource_ntlvh")])
 curve = Array[ExtResource("1_5sa5g")]([SubResource("Resource_kcxmc"), SubResource("Resource_oah3i")])
 ground = Color(0.41960785, 0.44705883, 0.5019608, 1)

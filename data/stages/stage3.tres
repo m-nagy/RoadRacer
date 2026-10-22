@@ -6,6 +6,7 @@
 [ext_resource type="Script" path="res://data/stage_data.gd" id="4_knrh2"]
 [ext_resource type="Script" path="res://data/shortcut_data.gd" id="5_buq7b"]
 [ext_resource type="Script" path="res://data/traffic_data.gd" id="6_anx2l"]
+[ext_resource type="Resource" path="res://data/weather/wind.tres" id="w_wind"]
 
 [sub_resource type="Resource" id="Resource_gxs2s"]
 script = ExtResource("1_uekyg")
@@ -57,7 +58,7 @@ name = "Seaside Bridge"
 id = "bridge"
 rng_seed = 23770
 theme = "bridge"
-weather = "wind"
+weather = ExtResource("w_wind")
 length = 90000.0
 lanes = Array[ExtResource("2_klytv")]([SubResource("Resource_lo1c4"), SubResource("Resource_v45bx"), SubResource("Resource_hlp1u"), SubResource("Resource_r8cmn")])
 curve = Array[ExtResource("1_uekyg")]([SubResource("Resource_gxs2s"), SubResource("Resource_ep5vb")])
