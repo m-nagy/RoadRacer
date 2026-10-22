@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="CarKind" format=3]
+
+[ext_resource type="Script" path="res://data/car_kind.gd" id="1_gt1ou"]
+[ext_resource type="Texture2D" path="res://assets/cars/truck.png" id="2_lkjp1"]
+
+[resource]
+script = ExtResource("1_gt1ou")
+texture = ExtResource("2_lkjp1")
+scale = 0.56
+hw = 21.0
+hh = 60.0
+speed = 220.0

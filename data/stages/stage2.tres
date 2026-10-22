@@ -1,0 +1,65 @@
+[gd_resource type="Resource" script_class="StageData" format=3]
+
+[ext_resource type="Script" path="res://data/curve_wave.gd" id="1_0j4sg"]
+[ext_resource type="Script" path="res://data/lane_section.gd" id="2_3n0em"]
+[ext_resource type="Script" path="res://data/obstacle_data.gd" id="3_qt0bw"]
+[ext_resource type="Script" path="res://data/stage_data.gd" id="4_lyoij"]
+[ext_resource type="Script" path="res://data/shortcut_data.gd" id="5_sy4ij"]
+[ext_resource type="Script" path="res://data/traffic_data.gd" id="6_2yo73"]
+
+[sub_resource type="Resource" id="Resource_pb30l"]
+script = ExtResource("1_0j4sg")
+amplitude = 120.0
+period = 3800.0
+
+[sub_resource type="Resource" id="Resource_jacvd"]
+script = ExtResource("1_0j4sg")
+amplitude = 50.0
+period = 1600.0
+
+[sub_resource type="Resource" id="Resource_nstdo"]
+script = ExtResource("2_3n0em")
+
+[sub_resource type="Resource" id="Resource_dkg1w"]
+script = ExtResource("2_3n0em")
+at = 0.5
+lanes = 3
+
+[sub_resource type="Resource" id="Resource_ql86d"]
+script = ExtResource("2_3n0em")
+at = 0.8
+
+[sub_resource type="Resource" id="Resource_u8b21"]
+script = ExtResource("3_qt0bw")
+kinds = Array[String](["cone"])
+
+[sub_resource type="Resource" id="Resource_q5wr2"]
+script = ExtResource("5_sy4ij")
+at = 0.35
+skip = 5200.0
+side = -1
+
+[sub_resource type="Resource" id="Resource_w6fbe"]
+script = ExtResource("6_2yo73")
+density = 1.2
+speed = 0.9
+kinds = Array[String](["taxi", "van", "pickup", "truck", "viper"])
+weights = Array[float]([3.0, 2.0, 3.0, 1.0, 1.0])
+
+[resource]
+script = ExtResource("4_lyoij")
+name = "Countryside"
+theme = "country"
+weather = "leaves"
+length = 80000.0
+lanes = Array[ExtResource("2_3n0em")]([SubResource("Resource_nstdo"), SubResource("Resource_dkg1w"), SubResource("Resource_ql86d")])
+curve = Array[ExtResource("1_0j4sg")]([SubResource("Resource_pb30l"), SubResource("Resource_jacvd")])
+ground = Color(0.3529412, 0.6039216, 0.27058825, 1)
+ground2 = Color(0.30980393, 0.5411765, 0.23529412, 1)
+asphalt = Color(0.27058825, 0.2784314, 0.3019608, 1)
+curb = Color(0.9098039, 0.8784314, 0.78431374, 1)
+traffic = SubResource("Resource_w6fbe")
+obstacles = SubResource("Resource_u8b21")
+v_slow = 297.0
+v_fast = 401.0
+shortcuts = Array[ExtResource("5_sy4ij")]([SubResource("Resource_q5wr2")])

@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="CarKind" format=3]
+
+[ext_resource type="Script" path="res://data/car_kind.gd" id="1_7cstp"]
+[ext_resource type="Texture2D" path="res://assets/cars/Mini_van.png" id="2_tfkhl"]
+
+[resource]
+script = ExtResource("1_7cstp")
+texture = ExtResource("2_tfkhl")
+scale = 0.5
+hw = 22.0
+hh = 52.0
+speed = 270.0
+behavior = "passive"

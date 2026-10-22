@@ -59,8 +59,8 @@ func _draw() -> void:
 # ---------------------------------------------------------------- ground and decor
 
 func _draw_ground() -> void:
-	var ground: Color = road.stage["ground"]
-	var ground2: Color = road.stage["ground2"]
+	var ground: Color = road.stage.ground
+	var ground2: Color = road.stage.ground2
 	var cx_mid := road.center_x((d0 + d1) * 0.5)
 	var half_view := 1100.0
 
@@ -181,9 +181,9 @@ func _draw_decor(it: Dictionary) -> void:
 # ---------------------------------------------------------------- surface
 
 func _draw_surface() -> void:
-	var ground: Color = road.stage["ground"]
-	var asphalt: Color = road.stage["asphalt"]
-	var curb: Color = road.stage["curb"]
+	var ground: Color = road.stage.ground
+	var asphalt: Color = road.stage.asphalt
+	var curb: Color = road.stage.curb
 	var bridge: bool = road.theme == "bridge"
 	var seg := Road.SEG
 	for i in range(int(floor(d0 / seg)), int(ceil(d1 / seg))):

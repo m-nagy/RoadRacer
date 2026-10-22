@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="CarKind" format=3]
+
+[ext_resource type="Script" path="res://data/car_kind.gd" id="1_hi4x6"]
+[ext_resource type="Texture2D" path="res://assets/cars/Car.png" id="2_q6s2y"]
+
+[resource]
+script = ExtResource("1_hi4x6")
+texture = ExtResource("2_q6s2y")
+speed = 290.0

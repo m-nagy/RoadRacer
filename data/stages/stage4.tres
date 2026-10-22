@@ -1,0 +1,74 @@
+[gd_resource type="Resource" script_class="StageData" format=3]
+
+[ext_resource type="Script" path="res://data/curve_wave.gd" id="1_t8bde"]
+[ext_resource type="Script" path="res://data/lane_section.gd" id="2_h885p"]
+[ext_resource type="Script" path="res://data/obstacle_data.gd" id="3_8qcgg"]
+[ext_resource type="Script" path="res://data/stage_data.gd" id="4_xf50q"]
+[ext_resource type="Script" path="res://data/shortcut_data.gd" id="5_yppx2"]
+[ext_resource type="Script" path="res://data/traffic_data.gd" id="6_poqpi"]
+
+[sub_resource type="Resource" id="Resource_htaoj"]
+script = ExtResource("1_t8bde")
+amplitude = 150.0
+period = 3600.0
+
+[sub_resource type="Resource" id="Resource_k3h7q"]
+script = ExtResource("1_t8bde")
+amplitude = 60.0
+period = 1600.0
+
+[sub_resource type="Resource" id="Resource_4qg83"]
+script = ExtResource("2_h885p")
+
+[sub_resource type="Resource" id="Resource_nur3n"]
+script = ExtResource("2_h885p")
+at = 0.35
+lanes = 2
+
+[sub_resource type="Resource" id="Resource_lcucx"]
+script = ExtResource("2_h885p")
+at = 0.55
+
+[sub_resource type="Resource" id="Resource_c2x85"]
+script = ExtResource("2_h885p")
+at = 0.85
+lanes = 3
+
+[sub_resource type="Resource" id="Resource_12uks"]
+script = ExtResource("3_8qcgg")
+density = 0.8
+kinds = Array[String](["rock", "oil"])
+
+[sub_resource type="Resource" id="Resource_r4kis"]
+script = ExtResource("5_yppx2")
+at = 0.4
+skip = 6000.0
+hidden = true
+side = -1
+
+[sub_resource type="Resource" id="Resource_2dil2"]
+script = ExtResource("6_poqpi")
+density = 1.5
+speed = 1.1
+kinds = Array[String](["taxi", "pickup", "viper", "police", "truck", "ambulance"])
+weights = Array[float]([2.0, 3.0, 3.0, 1.0, 2.0, 1.0])
+
+[resource]
+script = ExtResource("4_xf50q")
+name = "Desert Run"
+theme = "desert"
+weather = "sand"
+length = 100000.0
+lanes = Array[ExtResource("2_h885p")]([SubResource("Resource_4qg83"), SubResource("Resource_nur3n"), SubResource("Resource_lcucx"), SubResource("Resource_c2x85")])
+curve = Array[ExtResource("1_t8bde")]([SubResource("Resource_htaoj"), SubResource("Resource_k3h7q")])
+ground = Color(0.8784314, 0.72156864, 0.38431373, 1)
+ground2 = Color(0.827451, 0.65882355, 0.30980393, 1)
+asphalt = Color(0.33333334, 0.3137255, 0.2901961, 1)
+curb = Color(0.7882353, 0.33333334, 0.22745098, 1)
+traffic = SubResource("Resource_2dil2")
+obstacles = SubResource("Resource_12uks")
+fuel = 0.9
+v_slow = 329.0
+v_fast = 444.0
+grip = 0.95
+shortcuts = Array[ExtResource("5_yppx2")]([SubResource("Resource_r4kis")])

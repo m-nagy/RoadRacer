@@ -12,7 +12,7 @@ const GATE_GAP := 40.0
 const CHUNK := 1024.0        # length of one scenery chunk (a whole number of segments)
 const VIEW_MARGIN := 400.0   # chunks are kept this far beyond the visible range
 
-var stage: Dictionary
+var stage: StageData
 var length := 0.0
 var theme := "city"
 var night := false
@@ -29,33 +29,33 @@ class ShortcutStrip:
 var shortcuts: Array[ShortcutStrip] = []
 var view_ranges: Array = []  # Vector2(d_min, d_max)
 
-var _lanes: Array = []
-var _curve: Array = []
+var _lanes: Array[LaneSection] = []
+var _curve: Array[CurveWave] = []
 var decor: Array = []         # scenery beside the road, sorted by distance
 var _layers: Array[Node2D] = []
 var _chunks: Dictionary = {}  # chunk index -> [ground, decor, surface, front] RoadChunk nodes
 var _t := 0.0
 
 
-func setup(stage_dict: Dictionary, rng_seed: int) -> void:
-	stage = stage_dict
-	length = stage["length"]
-	theme = stage["theme"]
-	night = stage["night"]
-	_lanes = stage["lanes"]
-	_curve = stage["curve"]
+func setup(stage_data: StageData, rng_seed: int) -> void:
+	stage = stage_data
+	length = stage.length
+	theme = stage.theme
+	night = stage.night
+	_lanes = stage.lanes
+	_curve = stage.curve
 	checkpoints.clear()
 	for f in Stages.CHECKPOINTS:
 		checkpoints.append(length * f)
 	shortcuts.clear()
-	for s in stage["shortcuts"]:
-		var d0: float = length * s["at"]
+	for s in stage.shortcuts:
+		var d0: float = length * s.at
 		var sc := ShortcutStrip.new()
 		sc.d0 = d0
 		sc.d1 = d0 + STRIP_LEN
-		sc.exit_d = d0 + s["skip"]
-		sc.side = s["side"]
-		sc.hidden = s["hidden"]
+		sc.exit_d = d0 + s.skip
+		sc.side = s.side
+		sc.hidden = s.hidden
 		shortcuts.append(sc)
 	_generate_decor(rng_seed)
 	for l in RoadChunk.Layer.size():
@@ -73,12 +73,12 @@ func _process(delta: float) -> void:
 # ---------------------------------------------------------------- geometry
 
 func lanes_at(d: float) -> float:
-	var n := float(_lanes[0][1])
+	var n := float(_lanes[0].lanes)
 	for i in range(1, _lanes.size()):
-		var at: float = _lanes[i][0] * length
+		var at: float = _lanes[i].at * length
 		var k := clampf((d - (at - 500.0)) / 500.0, 0.0, 1.0)
 		k = k * k * (3.0 - 2.0 * k)
-		n = lerpf(n, float(_lanes[i][1]), k)
+		n = lerpf(n, float(_lanes[i].lanes), k)
 	return n
 
 
@@ -92,7 +92,7 @@ func center_x(d: float) -> float:
 	var x := 0.0
 	var ph := 0.0
 	for c in _curve:
-		x += c[0] * sin(TAU * d / c[1] + ph)
+		x += c.amplitude * sin(TAU * d / c.period + ph)
 		ph += 1.7
 	return x * env
 

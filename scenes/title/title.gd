@@ -56,8 +56,8 @@ func _build_background() -> void:
 	for i in 9:
 		var s := Sprite2D.new()
 		var k: String = kinds[i % kinds.size()]
-		s.texture = load(CarDefs.KINDS[k]["tex"])
-		s.scale = Vector2.ONE * CarDefs.KINDS[k]["scale"] * 1.5
+		s.texture = CarDefs.KINDS[k].texture
+		s.scale = Vector2.ONE * CarDefs.KINDS[k].scale * 1.5
 		s.modulate = Color(1, 1, 1, 0.9)
 		var lane := i % 5
 		s.position = Vector2(190.0 + lane * 225.0, randf_range(0.0, 900.0))
@@ -138,7 +138,7 @@ func _menu_button(box: Control, text: String, cb: Callable) -> Button:
 func _build_menu() -> void:
 	_menu_box = _centered_box("MenuBox")
 	var cont: int = SaveManager.unlocked
-	_menu_button(_menu_box, "Continue  -  Stage %d: %s" % [cont, Stages.get_stage(cont - 1)["name"]], func(): _pick_stage(cont - 1)).name = "Continue"
+	_menu_button(_menu_box, "Continue  -  Stage %d: %s" % [cont, Stages.get_stage(cont - 1).name], func(): _pick_stage(cont - 1)).name = "Continue"
 	_menu_button(_menu_box, "New Game  -  from Stage 1", func(): _pick_stage(0))
 	_menu_button(_menu_box, "Stage Select", func(): _show(Screen.STAGES))
 	_menu_button(_menu_box, "Options", func(): _show(Screen.OPTIONS))
@@ -173,7 +173,7 @@ func _build_stages() -> void:
 		var unlocked: bool = i < SaveManager.unlocked
 		var best := SaveManager.best_score(i + 1)
 		var b := Button.new()
-		b.text = "%d. %s\n%s" % [i + 1, st["name"], ("Best: %d" % best) if unlocked and best > 0 else ("" if unlocked else "Locked")]
+		b.text = "%d. %s\n%s" % [i + 1, st.name, ("Best: %d" % best) if unlocked and best > 0 else ("" if unlocked else "Locked")]
 		b.custom_minimum_size = Vector2(360, 120)
 		b.disabled = not unlocked
 		b.add_theme_font_size_override("font_size", 26)

@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="DifficultyLevel" format=3]
+
+[ext_resource type="Script" path="res://data/difficulty_level.gd" id="1_xhssu"]
+
+[resource]
+script = ExtResource("1_xhssu")
+label = "Hard"
+allow = 0
+fuel_spacing = 10000.0
+attack = 2.0
+obstacles = 1.6
+speed_mix = 1.0

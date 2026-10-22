@@ -3,7 +3,7 @@ extends Node2D
 ## A computer-driven car. Behaviour depends on its kind (see CarDefs).
 
 var kind := "taxi"
-var def: Dictionary
+var def: CarKind
 var behavior := "keeper"
 var world: World
 var speed := 300.0
@@ -32,7 +32,7 @@ var _wall_wait := 0.0     # how long the "leave a lane open" rule has kept us st
 var _wall_skip := 0.0     # ...after too long, ignore it for a moment so nothing waits forever      # indicator on while waiting to merge out of an ending lane
 var _ram_cd := 0.0
 var _react := 0.0
-var _frames: Array = []
+var _frames: Array[Texture2D] = []
 var _frame_t := 0.0
 var _sprite: Sprite2D
 var _blinker_drawn := NO_BLINK   # indicator state the node was last redrawn for
@@ -43,11 +43,11 @@ const NO_BLINK := -2
 func setup(kind_name: String, w: World, lane: int, d: float, speed_mult: float) -> void:
 	kind = kind_name
 	def = CarDefs.KINDS[kind]
-	behavior = def["behavior"]
+	behavior = def.behavior
 	world = w
-	hw = def["hw"]
-	hh = def["hh"]
-	base_speed = def["speed"] * (speed_mult if kind != "ambulance" else 1.0)
+	hw = def.hw
+	hh = def.hh
+	base_speed = def.speed * (speed_mult if kind != "ambulance" else 1.0)
 	base_speed *= randf_range(0.93, 1.07)
 	if not CarDefs.FAST_KINDS.has(kind):
 		base_speed = minf(base_speed, CarDefs.SLOW_CAP)   # only police and ambulance are fast
@@ -58,12 +58,10 @@ func setup(kind_name: String, w: World, lane: int, d: float, speed_mult: float) 
 	position = Vector2(w.road.lane_x(d, lane), -d)
 	rotation = w.road.heading(d)
 	_sprite = Sprite2D.new()
-	_sprite.texture = load(def["tex"])
-	_sprite.scale = Vector2.ONE * def["scale"]
+	_sprite.texture = def.texture
+	_sprite.scale = Vector2.ONE * def.scale
 	add_child(_sprite)
-	if def.has("frames"):
-		for f in def["frames"]:
-			_frames.append(load(f))
+	_frames = def.frames
 	if kind == "fuelcar":
 		var m := ShaderMaterial.new()
 		m.shader = Game.shader

@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="CarKind" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/cars/ambulance/1.png" id="1_tmep5"]
+[ext_resource type="Texture2D" path="res://assets/cars/ambulance/2.png" id="2_gvv53"]
+[ext_resource type="Texture2D" path="res://assets/cars/ambulance/3.png" id="3_d70gs"]
+[ext_resource type="Script" path="res://data/car_kind.gd" id="4_1fq87"]
+
+[resource]
+script = ExtResource("4_1fq87")
+texture = ExtResource("1_tmep5")
+frames = Array[Texture2D]([ExtResource("1_tmep5"), ExtResource("2_gvv53"), ExtResource("3_d70gs")])
+scale = 0.5
+hw = 22.0
+hh = 52.0
+speed = 780.0
+behavior = "passer"

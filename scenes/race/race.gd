@@ -77,12 +77,12 @@ func _ready() -> void:
 		var wx := Weather.new()
 		wx.process_mode = Node.PROCESS_MODE_PAUSABLE   # rain and HUD freeze with the game behind the pause menu
 		vp.add_child(wx)
-		wx.setup(world.stage["weather"])
+		wx.setup(world.stage.weather)
 		var hud: Hud = HUD_SCENE.instantiate()
 		hud.process_mode = Node.PROCESS_MODE_PAUSABLE
 		hud.world = world
 		hud.stage_no = _stage_no
-		hud.stage_name = world.stage["name"]
+		hud.stage_name = world.stage.name
 		wrap.add_child(hud)
 		var view := View.new()
 		view.slot = slot
@@ -142,7 +142,7 @@ func _on_shake(slot: int, strength: float) -> void:
 
 func _run_countdown() -> void:
 	_label.add_theme_font_size_override("font_size", 56)
-	_label.text = "STAGE %d\n%s" % [_stage_no, world.stage["name"].to_upper()]
+	_label.text = "STAGE %d\n%s" % [_stage_no, world.stage.name.to_upper()]
 	await get_tree().create_timer(2.0).timeout
 	_label.add_theme_font_size_override("font_size", 150)
 	for s in ["3", "2", "1"]:

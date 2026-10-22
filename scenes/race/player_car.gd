@@ -59,12 +59,12 @@ func setup(w: World, slot_idx: int, color_idx: int, easy_mode: bool, lane: int) 
 	world = w
 	slot = slot_idx
 	easy = easy_mode
-	grip = w.stage["grip"]
-	hw = CarDefs.PLAYER["hw"]
-	hh = CarDefs.PLAYER["hh"]
+	grip = w.stage.grip
+	hw = CarDefs.PLAYER.hw
+	hh = CarDefs.PLAYER.hh
 	_sprite = Sprite2D.new()
-	_sprite.texture = load(CarDefs.PLAYER["tex"])
-	_sprite.scale = Vector2.ONE * CarDefs.PLAYER["scale"]
+	_sprite.texture = CarDefs.PLAYER.texture
+	_sprite.scale = Vector2.ONE * CarDefs.PLAYER.scale
 	_sprite.material = Game.make_car_material(color_idx)
 	add_child(_sprite)
 	if easy:
@@ -73,7 +73,7 @@ func setup(w: World, slot_idx: int, color_idx: int, easy_mode: bool, lane: int) 
 	position = Vector2(w.road.lane_x(60.0, lane), -60.0)
 	rotation = w.road.heading(60.0)
 	_last_d = 60.0
-	if w.stage["night"]:
+	if w.stage.night:
 		_light = PointLight2D.new()
 		var g := GradientTexture2D.new()
 		g.fill = GradientTexture2D.FILL_RADIAL

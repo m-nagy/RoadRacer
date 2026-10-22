@@ -14,8 +14,8 @@ const SCORE_FUELCAR := 1000
 const SCORE_CHECKPOINT := 1000
 const TIME_FUEL := 10.0
 
-var stage: Dictionary
-var level: Dictionary          # difficulty settings (see Difficulty)
+var stage: StageData
+var level: DifficultyLevel     # difficulty settings (see Difficulty)
 var level_name := "normal"
 var cp_bonus := 25.0           # seconds added at each checkpoint (depends on stage + difficulty)
 var road: Road
@@ -81,7 +81,7 @@ func setup(stage_index: int) -> void:
 	dbg.world = self
 	dbg.z_index = 50
 	add_child(dbg)
-	if stage["night"]:
+	if stage.night:
 		var cm := CanvasModulate.new()
 		cm.color = Color(0.2, 0.24, 0.42)
 		add_child(cm)
@@ -107,11 +107,11 @@ func begin() -> void:
 # ------------------------------------------------------------ course generation
 
 func _build_course() -> void:
-	var ob: Dictionary = stage["obstacles"]
-	var kinds: Array = ob["kinds"]
-	var length: float = stage["length"]
+	var ob := stage.obstacles
+	var kinds := ob.kinds
+	var length := stage.length
 	var blocked_rows: Array = []  # [d, lane]
-	var density: float = ob["density"] * level["obstacles"]
+	var density: float = ob.density * level.obstacles
 	if density > 0.0 and not kinds.is_empty():
 		var d := 1600.0
 		while d < length - 900.0:
@@ -478,7 +478,7 @@ func obstacle_ahead(r: Rival, dist: float) -> Obstacle:
 
 
 func wind_at(_d: float) -> float:
-	var strength: float = stage["drift"]
+	var strength := stage.drift
 	if strength <= 0.0:
 		return 0.0
 	return strength * sin(t * 0.9) * (0.5 + 0.5 * sin(t * 0.37 + 1.0))
@@ -846,20 +846,20 @@ func _update_progress() -> void:
 ## Weight of a rival kind in the traffic mix; the "attacking" cars (they block / ram you)
 ## appear more or less often depending on the difficulty.
 func _kind_weight(k: String) -> float:
-	var w: float = stage["traffic"]["mix"][k]
+	var w := stage.traffic.weight_of(k)
 	if k == "viper" or k == "police":
-		w *= level["attack"]
+		w *= level.attack
 	return w
 
 
 func _pick_kind() -> String:
-	var mix: Dictionary = stage["traffic"]["mix"]
+	var kinds := stage.traffic.kinds
 	var total := 0.0
-	for k in mix:
+	for k in kinds:
 		if k != "ambulance":
 			total += _kind_weight(k)
 	var roll := rng.randf() * maxf(total, 0.001)
-	for k in mix:
+	for k in kinds:
 		if k == "ambulance":
 			continue
 		roll -= _kind_weight(k)
@@ -884,7 +884,7 @@ func _lanes_occupied(d: float, span: float) -> Array:
 
 
 func _traffic_update(fill: bool) -> void:
-	var dens: float = stage["traffic"]["density"]
+	var dens := stage.traffic.density
 	for p in players:
 		if p.state == PlayerCar.State.OUT or p.state == PlayerCar.State.FINISHED:
 			continue
@@ -944,11 +944,10 @@ func _lasting_lanes(d: float) -> int:
 
 
 func _special_spawns(dt: float) -> void:
-	var mix: Dictionary = stage["traffic"]["mix"]
 	var racing: Array = players.filter(func(p): return p.state == PlayerCar.State.RACING)
 	if racing.is_empty():
 		return
-	if mix.has("ambulance"):
+	if stage.traffic.has_kind("ambulance"):
 		_ambulance_timer -= dt
 		if _ambulance_timer <= 0.0:
 			_ambulance_timer = rng.randf_range(22.0, 36.0)
@@ -963,7 +962,7 @@ func _special_spawns(dt: float) -> void:
 	_fuelcar_timer -= dt
 	if _fuelcar_timer <= 0.0:
 		# The rainbow super car is rare (it makes you unstoppable for 15 s).
-		_fuelcar_timer = rng.randf_range(45.0, 70.0) * level["fuel_spacing"] / 6000.0
+		_fuelcar_timer = rng.randf_range(45.0, 70.0) * level.fuel_spacing / 6000.0
 		var tp: PlayerCar = racing[rng.randi() % racing.size()]
 		var fd: float = tp.d() + 1600.0
 		if fd < road.length - 600.0:
@@ -991,7 +990,7 @@ func _update_sirens() -> void:
 func _spawn_rival(kind: String, d: float, lane: int) -> Rival:
 	var r := Rival.new()
 	_rival_layer.add_child(r)
-	r.setup(kind, self, lane, d, stage["traffic"]["speed"])
+	r.setup(kind, self, lane, d, stage.traffic.speed)
 	rivals.append(r)
 	_by_d.append(r)
 	for p in players:
