@@ -70,8 +70,9 @@ If the game starts using an engine feature the custom template left out (the smo
 ## Menus
 
 Home -> (Stage Select) -> **Who plays?** -> **Cars** -> race. Home also has **Options** and Full Screen.
-**Stage Select** has the 6 campaign stages and a **Challenges** tab (switch with Q / E or LB / RB): shorter versions of
-the campaign stages with their own weather and time of day. A challenge unlocks when the stage it is based on is cleared.
+**Stage Select** lists the 6 worlds with their 3 stages each as picture cards (a screenshot of the road, its weather, time
+of day, lanes and length, a short description and your best score). The list scrolls with the focus. A stage opens when
+the one before it has been cleared; a locked one can be looked at but not started.
 
 | | Keyboard | Gamepad |
 |---|---|---|
@@ -113,9 +114,17 @@ Default controls (can be changed in Options):
 ## Rules
 Timer starts at 100 and counts down. Fuel cans +10, 3 checkpoints per stage add time, a crash costs 5 s and respawns you,
 a side bump halves your speed and burns time 1.5x faster for 5 s. Score = distance + overtakes (50) + fuel + checkpoints
-(1000) + leftover time x100. Hidden shortcuts skip 600-800 m. Stages unlock in order; clear ones can be replayed. Losing
-offers Retry Stage or New Game (progress and best scores are kept in `user://save.json`, which Godot stores in your
-user data folder: `%APPDATA%\Road Racer\` on Windows).
+(1000) + leftover time x100. Hidden shortcuts skip about 250-400 m. Stages unlock in order; clear ones can be replayed.
+Losing offers Retry Stage or New Game.
+
+### Saving
+Progress, best scores and settings are kept in `save.json`. In the exported game it is **next to the exe** (or in
+`%APPDATA%\Road Racer\` when that folder cannot be written, e.g. under Program Files); from the editor it is in
+`user://`. A save from an older version in `%APPDATA%\Road Racer\` is read when there is none next to the exe, and is
+left where it is. **Auto-save** (Options -> Game Settings) is on by default. With it off nothing is written until you
+press **Save now** (in Options, and on the Stage Clear menu), and quitting with unsaved progress asks whether to save.
+The game also remembers which keyboard or gamepad each player used: *Who plays?* starts with them in place when the
+same gamepad (matched by its model ID) is still plugged in.
 
 ### Difficulty
 | | Easy | Normal | Hard |
@@ -127,11 +136,13 @@ user data folder: `%APPDATA%\Road Racer\` on Windows).
 
 The checkpoint bonus is computed per stage and difficulty (`data/difficulty.gd`; `v_slow` / `v_fast` in the stage files)
 so those allowances hold. Easy is calibrated for slow gear throughout; Hard needs fast gear most of the time. A short
-stage (a challenge) starts with less than 100 s instead of getting very large checkpoint bonuses.
+stage starts with less than 100 s instead of getting very large checkpoint bonuses.
 
 ### Weather
 Each stage has a weather (`data/weather/*.tres`) that changes how the car drives as well as how it looks: rain, snow and
 blizzard are slippery, a sandstorm a little, fog slightly; gale and storm add a crosswind that pushes the car sideways.
+**Fog** is made of drifting cloud banks (`scenes/race/fog_banks.gd`) that cover some stretches of the road and leave
+others clear; the screen only hazes while you are inside a bank.
 
 ### Two-lane roads
 Where the road has only two lanes there is less traffic and fewer obstacles, cars keep a longer gap between lanes, and the
@@ -164,33 +175,42 @@ pressed. A red label and brake lights tell you why the car is slowing down. F3 s
 | `autoload/` | Global singletons: game flow, save data, input, audio, sound synthesis, developer bot |
 | `scenes/title/` | Home, Stage Select, Who plays?, Cars and Options screens (`.tscn` scenes plus their scripts) |
 | `scenes/race/` | The race: `world.gd` runs a tick and uses helpers (`course`, `traffic_query`, `traffic`, `collisions`, `race_rules`); road, cars, obstacles, HUD (`hud.tscn`), weather, auto-pilot |
-| `data/` | Resources you can edit in the Inspector: stages (`stages/`), challenges (`challenges/`), weather (`weather/`), car kinds (`cars/`), difficulty levels (`difficulty/`); default controls |
-| `assets/` | Car sprites, UI graphics, music and sound effects used by the game |
+| `data/` | Resources you can edit in the Inspector: worlds (`worlds/`), their stages (`stages/`), the tracks the stages are made from (`tracks/`), weather (`weather/`), car kinds (`cars/`), difficulty levels (`difficulty/`); default controls |
+| `assets/` | Car sprites, UI graphics, music, sound effects and the Stage Select pictures (`previews/`) used by the game |
 | `.github/` | The build pipeline, the custom export template options and the check scripts |
 | `art/` | Source of the game icon (`icon.svg`; ignored by Godot) |
 
 ### Adding a stage
-* **A new challenge from an existing track:** duplicate a file in `data/challenges/`, change `id`, `name`, `base`, `weather`,
-  `time_of_day`, `length_scale` and `rng_seed`, and add it to `Stages.VARIANTS`. Then measure `v_slow` / `v_fast` with the bot
-  (`gear=slow` / `gear=fast`, `diff=normal`, `notime`: the printed `v_eff`) and put them in the file so the time budget fits.
-* **A new weather:** duplicate a file in `data/weather/` and edit its particle layers, tint, grip and wind.
-* **A new campaign stage:** a new `StageData` (copy one in `data/stages/`) with its own `id` and `rng_seed`, added to
-  `Stages.CAMPAIGN`.
+The game is 6 **worlds** (`data/worlds/*.tres`, listed in `Stages.WORLDS`) of 3 **stages** each (`data/stages/<world>_<n>.tres`,
+a `StageVariant`). A stage is a **track** (`data/tracks/*.tres`: road shape, colours, traffic, hazards) plus what makes it
+different: `weather`, `time_of_day`, `length_scale`, `lane_change` (-1 = a narrower road), `curve_scale`, `traffic_scale`,
+`traffic_speed_scale`, `obstacle_scale`, `grip`, `wind`, a `description` and its own `rng_seed`.
+* **A new stage in a world:** duplicate one of its files in `data/stages/`, change the fields, add it to the world's `stages`.
+  Then (1) measure `v_slow` / `v_fast` with the bot (`gear=slow diff=easy` and `gear=fast diff=hard`, both with `notime`:
+  the printed `v_eff`) and put them in the file so the time budget fits, and (2) make its picture with
+  `tools/make_previews.sh <id>`; the smoke test fails when a stage has no picture.
+* **A new world:** a new track (copy one in `data/tracks/`), three stages made from it, a file in `data/worlds/`, and an entry
+  in `Stages.WORLDS`.
+* **A new weather:** duplicate a file in `data/weather/` and edit its particle layers, tint, grip and wind. Fog uses the
+  `fog_*` fields instead of particles (see `fog.tres`).
 
 ## Design notes
 - **Input** (`autoload/input_manager.gd`) is read directly instead of through InputMap: that is what makes the stuck-button
   and mirrored-gamepad filters, and per-player remapping, possible. The menus still use the normal `ui_*` actions.
 - **Simulation** runs on the fixed physics tick (`World._physics_process`), so the game plays at the same speed at any frame rate.
-- **Stages are identified by `id`**, and the save file (version 2) is keyed by it; version 1 saves are converted on load. Saves are
-  written to a temporary file and renamed, keeping the previous one as `save.json.bak`.
+- **Stages are identified by `id`**, and the save file (version 3) is keyed by it; version 1 and 2 saves are converted on load
+  (a cleared old stage counts as its whole world cleared; old best scores are dropped). Saves are written to a temporary
+  file and renamed, keeping the previous one as `save.json.bak`.
 
 ## Developer bot
 `godot --path . -- --autotest stage=4 players=2 easy=1 gear=fast seconds=60 shots=5,20 scale=2` drives the real game with the
 autopilot, prints crashes/progress and saves screenshots to `user://autotest/`. Run it headless and faster than real time
 with `--headless --fixed-fps 30`. Flags: `diff=easy|normal|hard`, `notime`, `crashes=N`, `hit=<obstacle kind|all>`, `super`,
 `title screen=0..4 fill flow=kb|pad|remap`, `shortcut`, `jump=0.98`, `pause=5`, `forcecrash=2`, `stat=N`, `padlog`,
-`police=6` (call the police on P1 after 6 s and log the chase), `stage=<number or id>` (`stage=rain_city` for a challenge),
-`graphics=low`, `cleared=city,bridge` (pretend only these stages are cleared), `gpu` (print GPU ms per view; needs a real
+`police=6` (call the police on P1 after 6 s and log the chase), `stage=<number 1-18, world-stage like 2-3, or an id like country_2>`,
+`graphics=low`, `cleared=city_1,city_2` (pretend only these stages are cleared), `savetest` (checks of the save file, its
+migration and the remembered controllers; `savecopy=<file>` also loads a copy of a real save), `preview` (see
+`tools/make_previews.sh`), `quitdialog` (try to quit with unsaved progress), `gpu` (print GPU ms per view; needs a real
 window). The stat line's audit counts rival `overlaps`, `walls` (rows of cars closing every lane ahead of a player) and
 `police_near`; the `[narrow]` line at the end tells how fast a fast-gear player got through two-lane roads.
 The bot only runs in debug builds (exports ignore it), and writes its own save file, never yours.

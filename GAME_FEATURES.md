@@ -33,30 +33,30 @@ A grown-up sets up the game (the menus use the keyboard or a gamepad), then the 
 
 ## Game play
 
-### Six stages
-Stages unlock in order and can be replayed:
+### Six worlds, eighteen short stages
+Every world has three short stages, one after the other, and each is harder than the one before: the weather turns worse,
+night falls, the road gets narrower, the traffic denser or faster. Stages unlock in order and can be replayed.
 
-| # | Stage | Weather / mood |
-|---|---|---|
-| 1 | City Centre | clear day, taxis and vans |
-| 2 | Countryside | falling leaves |
-| 3 | Seaside Bridge | wind |
-| 4 | Desert Run | sand storm |
-| 5 | Snowy Mountains | snow, slippery road |
-| 6 | Rainy Night City | rain at night, slippery road |
+| World | Stages |
+|---|---|
+| 1 City Centre | Morning Rush (clear), Wet Afternoon (rain), Neon Downpour (night rain, narrower road) |
+| 2 Countryside | Autumn Drive (leaves), Misty Fields (fog), Night Fog (fog, narrower road, more hazards) |
+| 3 Seaside Bridge | Sea Breeze (wind), Bridge Gale (gale), Storm Crossing (night storm on two lanes) |
+| 4 Desert Run | Dust Road (sand), Desert Night (sand, faster traffic), Desert Storm (night storm, winding) |
+| 5 Snowy Mountains | First Snow, Mountain Fog, Blizzard Pass |
+| 6 Night City | Midnight Run (dry), Rainy Night, Night Storm (the last stage) |
 
-Roads change from 2 to 4 lanes, wind left and right, and get longer and busier from stage to stage.
-
-### Six challenges
-After clearing a stage, a shorter **challenge** version of it opens up (Stage Select -> Challenges), with another weather and
-sometimes another time of day: City Downpour (rain), Misty Fields (fog), Bridge Gale (strong crosswind), Desert Storm (storm at
-night), Blizzard Pass (snow storm) and Midnight Run (the night city, dry). The weather changes the driving too: slippery roads,
-and gusts that push the car sideways. On two-lane roads there is less traffic, so a car at full speed can pass.
+Stage Select shows each stage as a card with a picture of its road and a short description, and scrolls when the list does
+not fit. The weather changes the driving too: slippery roads, and gusts that push the car sideways. **Fog** comes in drifting
+cloud banks that cover parts of the road, so you see the gaps between them. On two-lane roads there is less traffic, so a
+car at full speed can pass.
 
 ### Race against the clock
 * A **timer** starts at 100 seconds. Collect **fuel cans** (+10 s) and pass **3 checkpoints** per stage to gain more time.
 * **Hidden shortcuts** skip a few hundred metres if you find them.
-* Score comes from distance, overtaking cars, fuel, checkpoints and leftover time. Progress and best scores are saved.
+* Score comes from distance, overtaking cars, fuel, checkpoints and leftover time. Progress and best scores are saved in
+  `save.json` next to the game, with an **Auto-save** option (on by default; off means *Save now* buttons and a prompt when
+  quitting). The game remembers who played on which keyboard or gamepad.
 
 ### Two speeds
 **Slow** and **fast** gear. Slow is calm and easy; fast gets through the stage quicker and is needed for the Hard difficulty.
