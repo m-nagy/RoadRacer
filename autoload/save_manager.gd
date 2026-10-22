@@ -1,7 +1,11 @@
 extends Node
 ## Persists progress to user://save.json.
+## Autoload order: loaded first; uses no other autoload.
 
 const PATH := "user://save.json"
+
+## Where saves are written. The test bot points this elsewhere so it never touches a real save.
+var save_path := PATH
 
 var unlocked := 1                 # highest unlocked stage, 1-based
 var best: Dictionary = {}         # "1" -> {"score": int, "time": float}
@@ -15,20 +19,18 @@ var controls: Array = [ControlDefaults.profile(0), ControlDefaults.profile(1)]
 
 func _ready() -> void:
 	load_save()
-	if not OS.get_cmdline_user_args().has("--autotest"):
-		Game.set_fullscreen(fullscreen, false)
 
 
 func load_save() -> void:
-	if not FileAccess.file_exists(PATH):
+	if not FileAccess.file_exists(save_path):
 		return
-	var f := FileAccess.open(PATH, FileAccess.READ)
+	var f := FileAccess.open(save_path, FileAccess.READ)
 	if f == null:
 		return
 	var data = JSON.parse_string(f.get_as_text())
 	if typeof(data) != TYPE_DICTIONARY:
 		return
-	unlocked = clampi(int(data.get("unlocked", 1)), 1, Game.STAGE_COUNT)
+	unlocked = clampi(int(data.get("unlocked", 1)), 1, GameConst.STAGE_COUNT)
 	best = data.get("best", {})
 	fullscreen = bool(data.get("fullscreen", true))
 	difficulty = str(data.get("difficulty", "normal"))
@@ -43,7 +45,7 @@ func load_save() -> void:
 	if typeof(p) == TYPE_ARRAY and p.size() >= 2:
 		for i in 2:
 			if typeof(p[i]) == TYPE_DICTIONARY:
-				prefs[i] = {"color": posmod(int(p[i].get("color", prefs[i]["color"])), Game.COLORS.size()),
+				prefs[i] = {"color": posmod(int(p[i].get("color", prefs[i]["color"])), GameConst.COLORS.size()),
 					"easy": bool(p[i].get("easy", false))}
 
 
@@ -56,7 +58,7 @@ func _load_controls(saved) -> void:
 		var sp = saved[slot]
 		if typeof(sp) != TYPE_DICTIONARY:
 			continue
-		for a in InputManager.ACTIONS:
+		for a in ControlDefaults.ACTIONS:
 			if typeof(sp.get("kb", null)) == TYPE_DICTIONARY and sp["kb"].has(a):
 				controls[slot]["kb"][a] = int(sp["kb"][a])
 			if typeof(sp.get("pad", null)) == TYPE_DICTIONARY and typeof(sp["pad"].get(a, null)) == TYPE_ARRAY:
@@ -77,7 +79,7 @@ func reset_controls(slot: int) -> void:
 
 
 func save() -> void:
-	var f := FileAccess.open(PATH, FileAccess.WRITE)
+	var f := FileAccess.open(save_path, FileAccess.WRITE)
 	if f == null:
 		push_warning("Could not write save file")
 		return
@@ -85,9 +87,9 @@ func save() -> void:
 		"difficulty": difficulty, "music_volume": music_volume, "sfx_volume": sfx_volume, "controls": controls}))
 
 
-func store_prefs() -> void:
-	for i in Game.MAX_PLAYERS:
-		prefs[i] = {"color": Game.players[i].color, "easy": Game.players[i].easy}
+func store_prefs(players: Array[PlayerSlot]) -> void:
+	for i in GameConst.MAX_PLAYERS:
+		prefs[i] = {"color": players[i].color, "easy": players[i].easy}
 	save()
 
 
@@ -101,7 +103,7 @@ func record_clear(stage_1based: int, score: int, time_left: float) -> bool:
 	var is_best := score > best_score(stage_1based)
 	if is_best:
 		best[key] = {"score": score, "time": time_left}
-	if stage_1based + 1 > unlocked and stage_1based < Game.STAGE_COUNT:
+	if stage_1based + 1 > unlocked and stage_1based < GameConst.STAGE_COUNT:
 		unlocked = stage_1based + 1
 	save()
 	return is_best

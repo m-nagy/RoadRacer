@@ -3,13 +3,14 @@ extends Node
 ## see SaveManager.controls). A player plays with either the keyboard (using their slot's keyboard
 ## keys) or one gamepad (using their slot's gamepad bindings).
 ##
+## Autoload order: uses Game and SaveManager (both loaded before it).
+##
 ## Button state is evaluated here every frame (before anything else) instead of through InputMap,
 ## so buttons that were already held when a pad connected or a screen opened can be ignored until
 ## they are released ("stuck input" filter).
 
-const ACTIONS := ["left", "right", "up", "down", "slow", "fast", "pause"]
-const ACTION_NAMES := {"left": "Left", "right": "Right", "up": "Up", "down": "Down / Brake",
-	"slow": "Slow speed", "fast": "Fast speed", "pause": "Pause"}
+const ACTIONS := ControlDefaults.ACTIONS
+const ACTION_NAMES := ControlDefaults.ACTION_NAMES
 const AXIS_THRESHOLD := 0.5
 const TWIN_MS := 100           # two pads pressing the same input this close together = one controller seen twice
 
@@ -99,7 +100,7 @@ func _input(event: InputEvent) -> void:
 		return
 	# Fullscreen toggle works everywhere: F11 or Alt+Enter. F3 shows collision boxes.
 	if event is InputEventKey and event.pressed and not event.echo:
-		if event.physical_keycode == KEY_F3:
+		if event.physical_keycode == KEY_F3 and OS.is_debug_build():
 			Game.debug_boxes = not Game.debug_boxes
 		if event.physical_keycode == KEY_F11 or (event.physical_keycode == KEY_ENTER and event.alt_pressed):
 			Game.set_fullscreen(not Game.is_fullscreen())
@@ -335,6 +336,16 @@ static func pad_label(ev: Dictionary) -> String:
 		JOY_BUTTON_RIGHT_SHOULDER: "RB", JOY_BUTTON_LEFT_STICK: "L3", JOY_BUTTON_RIGHT_STICK: "R3",
 		JOY_BUTTON_DPAD_LEFT: "left", JOY_BUTTON_DPAD_RIGHT: "right", JOY_BUTTON_DPAD_UP: "up", JOY_BUTTON_DPAD_DOWN: "down"}
 	return b.get(int(ev["i"]), "Btn %d" % ev["i"])
+
+
+## Inputs of a pad that are being ignored until released (for the test bot's pad log).
+func blocked_inputs(dev: int) -> Dictionary:
+	return _blocked.get(dev, {})
+
+
+## Pads that are detected copies of another pad (for the test bot).
+func mirrored_pads() -> Array:
+	return _mirror.keys()
 
 
 ## Gamepads that should be offered to players: every connected pad except detected copies.

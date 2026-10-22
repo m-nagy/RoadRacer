@@ -1,21 +1,12 @@
 extends Node
 ## Session state shared between the title screen and the race.
+## Autoload order: uses SaveManager (loaded before it) and nothing else.
 
-const MAX_PLAYERS := 2
+const MAX_PLAYERS := GameConst.MAX_PLAYERS
 
-# Hue shifts are relative to the red base sprite (Audi.png).
-const COLORS := [
-	{"name": "Red", "hue": 0.0, "sat": 1.0, "val": 1.0},
-	{"name": "Orange", "hue": 0.07, "sat": 1.0, "val": 1.05},
-	{"name": "Yellow", "hue": 0.14, "sat": 1.0, "val": 1.1},
-	{"name": "Green", "hue": 0.33, "sat": 1.0, "val": 0.95},
-	{"name": "Blue", "hue": 0.60, "sat": 1.0, "val": 1.0},
-	{"name": "Purple", "hue": 0.76, "sat": 0.9, "val": 0.95},
-	{"name": "Pink", "hue": 0.90, "sat": 0.55, "val": 1.15},
-	{"name": "White", "hue": 0.0, "sat": 0.0, "val": 1.5},
-]
+const COLORS := GameConst.COLORS
 
-const STAGE_COUNT := 6
+const STAGE_COUNT := GameConst.STAGE_COUNT
 
 ## One entry per slot (see PlayerSlot).
 var players: Array[PlayerSlot] = []
@@ -28,6 +19,9 @@ var debug_boxes := false   # F3: show collision boxes
 
 func _ready() -> void:
 	reset_players()
+	# Start in the saved window mode (the test bot keeps the window it was given).
+	if not OS.get_cmdline_user_args().has("--autotest"):
+		set_fullscreen(SaveManager.fullscreen, false)
 
 
 func reset_players() -> void:

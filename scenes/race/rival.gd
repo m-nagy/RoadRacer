@@ -351,6 +351,11 @@ func is_chasing() -> bool:
 	return _free_x
 
 
+## Waiting for a gap to steer round an obstacle or into a lane.
+func is_blocked() -> bool:
+	return _blocked
+
+
 ## Knocked aside by a super car: jump one lane away.
 func kick(dir: int) -> void:
 	var n: int = world.road.lane_count(d())

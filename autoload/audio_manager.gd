@@ -1,5 +1,6 @@
 extends Node
 ## Music (random track per stage), one-shot sound effects, and per-player engine hum.
+## Autoload order: uses SaveManager (volumes) and Sfx.
 
 const MUSIC_DIR := "res://assets/music/"
 const IMPACT_DIR := "res://assets/sfx/"
@@ -101,6 +102,23 @@ func update_sirens(police_dist: float, ambulance_dist: float) -> void:
 		p.volume_db = lerpf(-34.0, -4.0, near * near) + sfx_db
 		if not p.playing:
 			p.play()
+
+
+## Numbers for the test bot's logs.
+func track_count() -> int:
+	return _track_names.size()
+
+
+func impact_families() -> Array:
+	return _impacts.keys()
+
+
+func siren_playing(kind: String) -> bool:
+	return _sirens[kind].playing
+
+
+func siren_volume_db(kind: String) -> float:
+	return _sirens[kind].volume_db
 
 
 func stop_sirens() -> void:

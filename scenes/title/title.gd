@@ -13,9 +13,9 @@ var _hint: Label
 var _bg_cars: Array = []
 var _bg_layer: Node2D
 var _scroll := 0.0
-var _players: PlayersScreen
+var players_screen: PlayersScreen
 var _cars: CarScreen
-var _options: OptionsScreen
+var options_screen: OptionsScreen
 
 
 func _ready() -> void:
@@ -30,18 +30,18 @@ func _ready() -> void:
 	_build_header()
 	_build_menu()
 	_build_stages()
-	_players = PlayersScreen.new()
-	_players.finished.connect(func(): _show(Screen.CARS))
-	_players.back.connect(func(): _show(Screen.HOME))
-	add_child(_players)
+	players_screen = PlayersScreen.new()
+	players_screen.finished.connect(func(): show_screen(Screen.CARS))
+	players_screen.back.connect(func(): show_screen(Screen.HOME))
+	add_child(players_screen)
 	_cars = CarScreen.new()
 	_cars.finished.connect(_start_race)
-	_cars.back.connect(func(): _show(Screen.PLAYERS))
+	_cars.back.connect(func(): show_screen(Screen.PLAYERS))
 	add_child(_cars)
-	_options = OptionsScreen.new()
-	_options.back.connect(func(): _show(Screen.HOME))
-	add_child(_options)
-	_show(Screen.HOME)
+	options_screen = OptionsScreen.new()
+	options_screen.back.connect(func(): show_screen(Screen.HOME))
+	add_child(options_screen)
+	show_screen(Screen.HOME)
 	AudioManager.engines_stop_all()
 	AudioManager.play_music(0)
 	AudioManager.apply_volumes()
@@ -140,8 +140,8 @@ func _build_menu() -> void:
 	var cont: int = SaveManager.unlocked
 	_menu_button(_menu_box, "Continue  -  Stage %d: %s" % [cont, Stages.get_stage(cont - 1).name], func(): _pick_stage(cont - 1)).name = "Continue"
 	_menu_button(_menu_box, "New Game  -  from Stage 1", func(): _pick_stage(0))
-	_menu_button(_menu_box, "Stage Select", func(): _show(Screen.STAGES))
-	_menu_button(_menu_box, "Options", func(): _show(Screen.OPTIONS))
+	_menu_button(_menu_box, "Stage Select", func(): show_screen(Screen.STAGES))
+	_menu_button(_menu_box, "Options", func(): show_screen(Screen.OPTIONS))
 	var fs := _menu_button(_menu_box, "", func(): pass)
 	fs.name = "Fullscreen"
 	fs.pressed.connect(func():
@@ -184,7 +184,7 @@ func _build_stages() -> void:
 	back.text = "Back"
 	back.custom_minimum_size = Vector2(300, 64)
 	back.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	back.pressed.connect(func(): _show(Screen.HOME))
+	back.pressed.connect(func(): show_screen(Screen.HOME))
 	v.add_child(back)
 	_stage_box.visible = false
 
@@ -196,14 +196,14 @@ func _update_fullscreen_label() -> void:
 
 # ------------------------------------------------------------ flow
 
-func _show(s: Screen) -> void:
+func show_screen(s: Screen) -> void:
 	screen = s
 	InputManager.freeze_held()
 	_menu_box.get_parent().visible = s == Screen.HOME
 	_stage_box.visible = s == Screen.STAGES
-	_players.visible = s == Screen.PLAYERS
+	players_screen.visible = s == Screen.PLAYERS
 	_cars.visible = s == Screen.CARS
-	_options.visible = s == Screen.OPTIONS
+	options_screen.visible = s == Screen.OPTIONS
 	match s:
 		Screen.HOME:
 			_hint.text = "Move: arrows / D-pad / stick      Enter / A / Cross = choose"
@@ -218,22 +218,22 @@ func _show(s: Screen) -> void:
 					break
 		Screen.PLAYERS:
 			_hint.text = "Move a controller to Player 1 or 2      Enter / A / Cross = go on      Esc / B / Circle = back"
-			_players.open()
+			players_screen.open()
 		Screen.CARS:
 			_hint.text = "Pick your car      Enter = start      Esc / B / Circle = back"
 			_cars.open()
 		Screen.OPTIONS:
 			_hint.text = "Move: arrows / D-pad / stick      Enter / A / Cross = choose      Esc / B / Circle = back"
-			_options.open()
+			options_screen.open()
 
 
 func _pick_stage(stage: int) -> void:
 	Game.pending_stage = stage
-	_show(Screen.PLAYERS)
+	show_screen(Screen.PLAYERS)
 
 
 func _start_race() -> void:
-	SaveManager.store_prefs()
+	SaveManager.store_prefs(Game.players)
 	AudioManager.play("go", -6.0)
 	Game.go_to_race(Game.pending_stage)
 
@@ -243,7 +243,7 @@ func _input(event: InputEvent) -> void:
 		return   # the same press from a mirrored (virtual) gamepad
 	if screen == Screen.STAGES and event.is_action_pressed("ui_cancel"):
 		get_viewport().set_input_as_handled()
-		_show(Screen.HOME)
+		show_screen(Screen.HOME)
 
 
 func _process(delta: float) -> void:

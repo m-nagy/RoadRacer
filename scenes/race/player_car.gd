@@ -5,7 +5,7 @@ extends Node2D
 enum State { RACING, CRASHED, OUT, FINISHED }
 
 ## The world listens to these and reacts (sounds, pop-ups, clearing room for a respawn).
-signal crashed(reason: String)
+signal crashed(reason: String, impact_speed: float)
 signal respawned
 signal bumped
 signal oil_hit
@@ -276,11 +276,7 @@ func hits_road_side() -> bool:
 func crash(reason := "") -> void:
 	if state != State.RACING or super_t > 0.0:
 		return
-	if Autotest.enabled:
-		print("[crash] P%d d=%.0f v=%.0f x=%.0f road=%.0f reason=%s" % [slot + 1, d(), speed, position.x, world.road.center_x(d()), reason])
-		if pilot:
-			for h in pilot.history.slice(-14):
-				print("   ", h)
+	var impact_speed := speed
 	state = State.CRASHED
 	crashes += 1
 	_crash_t = 1.6
@@ -289,7 +285,7 @@ func crash(reason := "") -> void:
 	time_left = maxf(0.0, time_left - CRASH_PENALTY)
 	_sprite.visible = false
 	_sprite.rotation = 0.0
-	crashed.emit(reason)
+	crashed.emit(reason, impact_speed)
 
 
 func _respawn() -> void:

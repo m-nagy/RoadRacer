@@ -46,8 +46,8 @@ func _ready() -> void:
 	tabs.add_theme_constant_override("separation", 16)
 	tabs.alignment = BoxContainer.ALIGNMENT_CENTER
 	root.add_child(tabs)
-	_tab_game = _button(tabs, "Game Settings", func(): _select_tab(0), Vector2(300, 56))
-	_tab_controls = _button(tabs, "Controls", func(): _select_tab(1), Vector2(300, 56))
+	_tab_game = _button(tabs, "Game Settings", func(): select_tab(0), Vector2(300, 56))
+	_tab_controls = _button(tabs, "Controls", func(): select_tab(1), Vector2(300, 56))
 
 	_game_box = _build_game()
 	root.add_child(_game_box)
@@ -63,7 +63,7 @@ func _ready() -> void:
 	_capture_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_capture_label.visible = false
 	add_child(_capture_label)
-	_select_tab(0, false)
+	select_tab(0, false)
 
 
 func _button(parent: Control, text: String, cb: Callable, min_size := Vector2(0, 52)) -> Button:
@@ -178,7 +178,7 @@ func _build_controls() -> Control:
 		_profile_buttons.append(b)
 	var rb := _button(prow, "Reset defaults", func():
 		SaveManager.reset_controls(_profile)
-		_refresh_cells(), Vector2(210, 44))
+		refresh_cells(), Vector2(210, 44))
 	rb.add_theme_font_size_override("font_size", 22)
 	UiTheme.compact(rb, 40)
 	var bb := _button(prow, "Back", func(): back.emit(), Vector2(130, 44))
@@ -197,8 +197,8 @@ func _build_controls() -> Control:
 	for a in InputManager.ACTIONS:
 		var act: String = a
 		_label(grid, InputManager.ACTION_NAMES[act], 22)
-		_cells["kb:" + act] = _button(grid, "", func(): _start_capture("kb", act), Vector2(190, 36))
-		_cells["pad:" + act] = _button(grid, "", func(): _start_capture("pad", act), Vector2(250, 36))
+		_cells["kb:" + act] = _button(grid, "", func(): start_capture("kb", act), Vector2(190, 36))
+		_cells["pad:" + act] = _button(grid, "", func(): start_capture("pad", act), Vector2(250, 36))
 		_cells["kb:" + act].add_theme_font_size_override("font_size", 22)
 		_cells["pad:" + act].add_theme_font_size_override("font_size", 22)
 		UiTheme.compact(_cells["kb:" + act])
@@ -217,10 +217,10 @@ func _build_controls() -> Control:
 
 func _select_profile(i: int) -> void:
 	_profile = i
-	_refresh_cells()
+	refresh_cells()
 
 
-func _refresh_cells() -> void:
+func refresh_cells() -> void:
 	for i in _profile_buttons.size():
 		_profile_buttons[i].text = ("● " if i == _profile else "○ ") + "Player %d" % (i + 1)
 	var prof: Dictionary = SaveManager.controls[_profile]
@@ -232,7 +232,7 @@ func _refresh_cells() -> void:
 		_cells["pad:" + a].text = " / ".join(names) if not names.is_empty() else "-"
 
 
-func _start_capture(kind: String, action: String) -> void:
+func start_capture(kind: String, action: String) -> void:
 	_capturing = {"kind": kind, "action": action}
 	_capture_t = 0.0
 	_capture_label.visible = true
@@ -243,7 +243,7 @@ func _start_capture(kind: String, action: String) -> void:
 func _end_capture(msg := "") -> void:
 	_capturing = {}
 	_capture_label.visible = false
-	_refresh_cells()
+	refresh_cells()
 	if msg != "":
 		AudioManager.play("select", -6.0)
 
@@ -308,13 +308,13 @@ func _input(event: InputEvent) -> void:
 		back.emit()
 
 
-func _select_tab(i: int, focus := true) -> void:
+func select_tab(i: int, focus := true) -> void:
 	_game_box.visible = i == 0
 	_controls_box.visible = i == 1
 	_tab_game.text = ("● " if i == 0 else "○ ") + "Game Settings"
 	_tab_controls.text = ("● " if i == 1 else "○ ") + "Controls"
 	_update_labels()
-	_refresh_cells()
+	refresh_cells()
 	if focus:
 		(_tab_game if i == 0 else _tab_controls).call_deferred("grab_focus")
 
@@ -322,7 +322,7 @@ func _select_tab(i: int, focus := true) -> void:
 func open() -> void:
 	visible = true
 	InputManager.freeze_held()
-	_select_tab(0, false)
+	select_tab(0, false)
 	_capturing = {}
 	_capture_label.visible = false
 	_tab_game.call_deferred("grab_focus")

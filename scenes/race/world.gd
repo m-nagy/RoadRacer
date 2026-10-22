@@ -58,10 +58,11 @@ func setup(stage_index: int) -> void:
 	collisions = Collisions.new(self)
 	rules = RaceRules.new(self)
 	course.build()
-	var dbg := DebugBoxes.new()
-	dbg.world = self
-	dbg.z_index = 50
-	add_child(dbg)
+	if OS.is_debug_build():
+		var dbg := DebugBoxes.new()
+		dbg.world = self
+		dbg.z_index = 50
+		add_child(dbg)
 	if stage.night:
 		var cm := CanvasModulate.new()
 		cm.color = Color(0.2, 0.24, 0.42)
@@ -118,7 +119,7 @@ func _physics_process(delta: float) -> void:
 
 # ------------------------------------------------------------ player events
 
-func _on_player_crashed(_reason: String, p: PlayerCar) -> void:
+func _on_player_crashed(_reason: String, _impact_speed: float, p: PlayerCar) -> void:
 	AudioManager.play("boom")
 	AudioManager.play_impact("impactMetal", -2.0)
 	popup.emit(p.slot, "CRASH!  -5", "bad")

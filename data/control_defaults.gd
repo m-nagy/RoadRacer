@@ -1,6 +1,10 @@
 class_name ControlDefaults
 ## Default key / gamepad bindings for the two player profiles.
 
+const ACTIONS := ["left", "right", "up", "down", "slow", "fast", "pause"]
+const ACTION_NAMES := {"left": "Left", "right": "Right", "up": "Up", "down": "Down / Brake",
+	"slow": "Slow speed", "fast": "Fast speed", "pause": "Pause"}
+
 
 static func profile(slot: int) -> Dictionary:
 	var kb := {"left": KEY_A, "right": KEY_D, "up": KEY_W, "down": KEY_S, "slow": KEY_G, "fast": KEY_H, "pause": KEY_ESCAPE}

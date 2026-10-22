@@ -229,13 +229,13 @@ func _input(event: InputEvent) -> void:
 		return
 	if _menu == null:
 		if world.running:
-			_open_pause()
+			open_pause()
 	elif _menu_kind == "pause":
 		_close_menu()
 	get_viewport().set_input_as_handled()
 
 
-func _open_pause() -> void:
+func open_pause() -> void:
 	AudioManager.play("blip")
 	AudioManager.duck_music(true)
 	AudioManager.engines_stop_all()
@@ -318,7 +318,7 @@ func _end_clear() -> void:
 		else:
 			lines.append("%s: did not finish  (%d pts)" % [tag, int(p.score)])
 	is_best = SaveManager.record_clear(_stage_no, best_score, time_left)
-	SaveManager.store_prefs()
+	SaveManager.store_prefs(Game.players)
 	if is_best:
 		lines.append("NEW BEST!")
 	AudioManager.play("goal")
@@ -336,7 +336,7 @@ func _end_fail() -> void:
 	AudioManager.engines_stop_all()
 	AudioManager.stop_music()
 	AudioManager.play("fail")
-	SaveManager.store_prefs()
+	SaveManager.store_prefs(Game.players)
 	var lines := []
 	for v in views:
 		var p: PlayerCar = v.player

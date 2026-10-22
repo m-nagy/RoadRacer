@@ -13,6 +13,9 @@ const SAFE_X := 12.0        # extra sideways clearance
 const STEER_LIMIT := 0.85   # the real car uses the same limit, so predictions match reality
 const SAFE_Y := 14.0        # extra lengthwise clearance (grows with closing speed)
 
+## Keep a log of recent plans (see `history`); switched on by the test bot.
+static var record_history := false
+
 var target_lane := -1
 var debug := ""
 var history: Array = []
@@ -128,7 +131,7 @@ func _search(p: PlayerCar, world: World, road: Road, d: float, v: float, u: floa
 		cap = 9999.0
 	_cap = cap
 	debug = "lane=%d cap=%.0f scores=%s" % [target_lane, cap, str(lane_best.map(func(x): return int(x)))]
-	if Autotest.enabled:
+	if record_history:
 		var near := []
 		for o in _objs:
 			if o.d - d < 500.0 and o.d - d > -120.0:
