@@ -10,6 +10,7 @@ class CourseSpec:
 	var d := 0.0
 
 
+const NARROW_SPACING := 2.5     # obstacles are this many times further apart on roads of two lanes or fewer
 const COURSE_BEHIND := 1300.0   # live course objects reach this far behind the rearmost player...
 const COURSE_AHEAD := 3600.0    # ...and this far ahead of the front one (more than traffic can see)
 
@@ -57,7 +58,8 @@ func build() -> void:
 	if density > 0.0 and not kinds.is_empty():
 		var d := 1600.0
 		while d < length - 900.0:
-			d += rng.randf_range(0.7, 1.3) * 1000.0 / (density * 1.6)
+			var step := rng.randf_range(0.7, 1.3) * 1000.0 / (density * 1.6)
+			d += step * (NARROW_SPACING if road.lane_count(d) <= 2 else 1.0)   # fewer hazards where there is little room to pass
 			if _near_marker(d):
 				continue
 			var n := road.lane_count(d)

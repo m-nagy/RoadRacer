@@ -196,7 +196,8 @@ func tick(dt: float) -> void:
 					_change_lane(_blink_dir)
 					_timer = randf_range(2.0, 4.5)
 		"blocker":
-			var p2 = world.query.player_behind(self, 520.0, 400.0)
+			# Only on roads wide enough to get past: on two lanes nobody gets to block the player.
+			var p2 = world.query.player_behind(self, 520.0, 400.0) if road.lane_count(dd) > 2 else null
 			if p2 != null and _react <= 0.0:
 				var pl: int = road.nearest_lane(dd, p2.position.x)
 				if pl != lane_now():

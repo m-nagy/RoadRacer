@@ -7,6 +7,7 @@ extends RefCounted
 const FOLLOW_DECEL := 300.0   # rivals keep enough distance to stop behind the car ahead at this rate
 const FOLLOW_GAP := 18.0       # bumper-to-bumper gap they settle at
 const WALL_GAP := 60.0         # lengthwise room left round a car so the player can slip past it
+const NARROW_PASS_GAP := 200.0 # ...on roads of two lanes or fewer: a full-speed car needs room to change lane twice
 const WALL_LOOK := 450.0       # how far ahead a rival looks for a row it must not complete
 const WALL_AHEAD := 120.0      # ...counting what that row is about to draw level with
 const OBSTACLE_MAX_HH := 30.0  # taller than any obstacle's half length (bounds the sorted searches)
@@ -166,6 +167,11 @@ func lanes_blocked(d_lo: float, d_hi: float, skip: Rival, min_d := -INF) -> Dict
 	return used
 
 
+## Lengthwise room cars keep between lanes (wall_limit) on a road with this many lanes.
+func gap_for(lanes: int) -> float:
+	return WALL_GAP if lanes >= 3 else NARROW_PASS_GAP
+
+
 ## Would this rival, sitting in `lane`, be the car that closes the last open lane round it?
 func lane_closes_road(r: Rival, lane: int) -> bool:
 	var rd := r.d()
@@ -205,6 +211,7 @@ func wall_limit(r: Rival) -> float:
 	if n <= 1:
 		return INF
 	var mine := rival_lanes(r)
+	var wall := gap_for(n)
 	var limit := INF
 	for i in range(_first_rival_at(rd), _by_d.size()):
 		var o := _by_d[i]
@@ -213,8 +220,8 @@ func wall_limit(r: Rival) -> float:
 			break
 		if o == r or o.kind == "fuelcar" or o.speed < 40.0 or dy <= 0.0:
 			continue
-		var lo: float = o.d() - o.hh - WALL_GAP
-		var used := lanes_blocked(lo, o.d() + o.hh + WALL_GAP + WALL_AHEAD, r, rd)
+		var lo: float = o.d() - o.hh - wall
+		var used := lanes_blocked(lo, o.d() + o.hh + wall + WALL_AHEAD, r, rd)
 		if used.size() >= n:
 			continue   # closed without us: we are behind someone in our own lane anyway
 		var adds := false

@@ -163,7 +163,7 @@ func _gather(p: PlayerCar, world: World, road: Road, d: float, v: float) -> void
 		var cx := road.center_x(rd)
 		var ru: float = r.position.x - cx
 		var kind := "car"
-		if r.behavior == "blocker" or (r.behavior == "rammer" and (r.is_chasing() or rd - d < 700.0)):
+		if (r.behavior == "blocker" and road.lane_count(rd) > 2) or (r.behavior == "rammer" and (r.is_chasing() or rd - d < 700.0)):
 			kind = "chaser"   # may move into whatever lane we pick
 		var ut: float = road.lane_x(rd, r.target_lane) - cx
 		# Rivals slow down behind slower traffic: predict that.

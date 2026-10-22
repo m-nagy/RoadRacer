@@ -69,6 +69,6 @@ traffic = SubResource("Resource_2dil2")
 obstacles = SubResource("Resource_12uks")
 fuel = 0.9
 v_slow = 329.0
-v_fast = 444.0
+v_fast = 487.0
 grip = 0.95
 shortcuts = Array[ExtResource("5_yppx2")]([SubResource("Resource_r4kis")])

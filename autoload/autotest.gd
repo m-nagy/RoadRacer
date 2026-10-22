@@ -276,6 +276,7 @@ func _process(delta: float) -> void:
 			img.save_png(path)
 			print("[autotest] screenshot ", ProjectSettings.globalize_path(path))
 	_audit_rivals(world)
+	_audit_narrow(world)
 	if _t >= _next_stat:
 		_next_stat += stat_every
 		var line := "[autotest] t=%.0f" % _t
@@ -299,6 +300,7 @@ func _process(delta: float) -> void:
 		var eff: float = world.road.length / maxf(world.t - cr * Difficulty.CRASH_COST / float(world.players.size()), 1.0)
 		for q in world.players:
 			print("[totals] P%d score=%d crashes=%d overtakes=%d state=%d d=%.0f" % [q.slot + 1, int(q.score), q.crashes, q.overtakes, q.state, q.d()])
+		print("[narrow] ticks=%d slow=%d share=%.1f%% avg_v=%.0f walls=%d" % [_narrow_ticks, _narrow_slow, 100.0 * _narrow_slow / maxf(_narrow_ticks, 1), _narrow_v / maxf(_narrow_ticks, 1), _walls_narrow])
 		print("[perf] samples=%d process_ms avg=%.3f max=%.3f | physics_ms avg=%.3f max=%.3f" % [_perf_n, _perf_proc / maxf(_perf_n, 1), _perf_proc_max, _perf_phys / maxf(_perf_n, 1), _perf_phys_max])
 		print("[autotest] finished at t=%.1f  sim_t=%.1f length=%.0f crashes=%d  v_eff=%.0f px/s  state=%d time_left=%.0f fuel=%d/%d" % [_t, world.t, world.road.length, cr, eff, wp.state, wp.time_left, world.course.pickups_taken, world.course.pickups_total])
 		get_tree().quit()
@@ -361,6 +363,24 @@ var _fast_bad := 0
 var _overlaps := 0
 var _walls := 0
 var _police_near := 0
+var _narrow_ticks := 0
+var _narrow_slow := 0
+var _narrow_v := 0.0
+var _walls_narrow := 0   # walls (every lane blocked) ahead of a player on a road of two lanes or fewer
+
+
+## Time fast-gear players spend on roads with two lanes or fewer, and how much of it they are held
+## below 90% of top speed (by traffic): the road should leave room to pass at full speed.
+func _audit_narrow(world: World) -> void:
+	for p in world.players:
+		if p.state != PlayerCar.State.RACING or p.target_speed < PlayerCar.FAST_MAX:
+			continue
+		if world.road.lane_count(p.d()) > 2:
+			continue
+		_narrow_ticks += 1
+		_narrow_v += p.speed
+		if p.speed < PlayerCar.FAST_MAX * 0.9:
+			_narrow_slow += 1
 
 
 ## Counts (cumulatively) rival cars that leave the road, drive over obstacles, or are too fast.
@@ -405,6 +425,8 @@ func _audit_rivals(world: World) -> void:
 					used[world.road.nearest_lane(o.d(), o.position.x)] = true
 			if used.size() >= n and cars >= 2:
 				_walls += 1
+				if n <= 2:
+					_walls_narrow += 1
 				break
 			sd += 40.0
 

@@ -4,6 +4,7 @@ extends RefCounted
 ## (ambulance, super car, called police) and the sirens.
 
 const POLICE_BEHIND := 470.0   # a called police car enters this far behind the player (just out of view)
+const NARROW_TRAFFIC := 0.3    # traffic on roads of two lanes or fewer, as a share of the stage's density
 
 var world: World
 var road: Road
@@ -96,7 +97,10 @@ func update_traffic(fill: bool) -> void:
 		for r in rivals:
 			if r.kind != "ambulance" and r.kind != "fuelcar" and r.d() >= lo and r.d() <= hi:
 				count += 1
-		var target := int(round(dens * 2.4 * (hi - lo) / 1000.0))
+		var target_f := dens * 2.4 * (hi - lo) / 1000.0
+		if _lasting_lanes(hi) <= 2:
+			target_f *= NARROW_TRAFFIC   # leave room to overtake where the road is narrow
+		var target := int(round(target_f))
 		if count >= target:
 			continue
 		var d := hi - rng.randf_range(0.0, 140.0) if not fill else rng.randf_range(lo, hi)
