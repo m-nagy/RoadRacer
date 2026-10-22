@@ -13,7 +13,7 @@ var _scroll := 0.0
 @onready var _bg_layer: Node2D = %BgLayer
 @onready var _hint: Label = %Hint
 @onready var _menu_box: VBoxContainer = %MenuBox
-@onready var _stage_select: StageSelect = %StageSelect
+@onready var stage_select: StageSelect = %StageSelect
 @onready var players_screen: PlayersScreen = %PlayersScreen
 @onready var _cars: CarScreen = %CarScreen
 @onready var options_screen: OptionsScreen = %OptionsScreen
@@ -31,8 +31,8 @@ func _ready() -> void:
 			Game.players[i].easy = SaveManager.prefs[i]["easy"]
 	_build_background()
 	_setup_menu()
-	_stage_select.picked.connect(_pick_stage)
-	_stage_select.back.connect(func(): show_screen(Screen.HOME))
+	stage_select.picked.connect(_pick_stage)
+	stage_select.back.connect(func(): show_screen(Screen.HOME))
 	players_screen.finished.connect(func(): show_screen(Screen.CARS))
 	players_screen.back.connect(func(): show_screen(Screen.HOME))
 	_cars.finished.connect(_start_race)
@@ -104,7 +104,7 @@ func show_screen(s: Screen) -> void:
 	screen = s
 	InputManager.freeze_held()
 	_menu_box.get_parent().visible = s == Screen.HOME
-	_stage_select.visible = s == Screen.STAGES
+	stage_select.visible = s == Screen.STAGES
 	players_screen.visible = s == Screen.PLAYERS
 	_cars.visible = s == Screen.CARS
 	options_screen.visible = s == Screen.OPTIONS
@@ -115,7 +115,7 @@ func show_screen(s: Screen) -> void:
 			%Continue.call_deferred("grab_focus")
 		Screen.STAGES:
 			_hint.text = "Pick a stage      Enter / A / Cross = choose      Esc / B / Circle = back"
-			_stage_select.open()
+			stage_select.open()
 		Screen.PLAYERS:
 			_hint.text = "Move a controller to Player 1 or 2      Enter / A / Cross = go on      Esc / B / Circle = back"
 			players_screen.open()

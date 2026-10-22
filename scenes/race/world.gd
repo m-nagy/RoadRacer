@@ -18,6 +18,7 @@ var stage: StageData
 var level: DifficultyLevel     # difficulty settings (see Difficulty)
 var level_name := "normal"
 var cp_bonus := 25.0           # seconds added at each checkpoint (depends on stage + difficulty)
+var start_time := 100.0        # what every player's timer starts at
 var road: Road
 var running := false
 var t := 0.0
@@ -40,7 +41,9 @@ func setup(stage_data: StageData) -> void:
 	stage = stage_data
 	level_name = SaveManager.difficulty
 	level = Difficulty.level(level_name)
-	cp_bonus = Difficulty.checkpoint_bonus(stage, level)
+	var budget := Difficulty.time_budget(stage, level)
+	cp_bonus = budget["checkpoint"]
+	start_time = budget["start"]
 	rng.seed = stage.rng_seed
 	seed(rng.seed)   # the global RNG (rivals, shuffles) repeats too, so a run can be replayed exactly
 	road = Road.new()
@@ -73,6 +76,8 @@ func add_player(slot: int, color_idx: int, easy: bool, lane: int) -> PlayerCar:
 	var p := PlayerCar.new()
 	_player_layer.add_child(p)
 	p.setup(self, slot, color_idx, easy, lane)
+	p.start_time = start_time
+	p.time_left = start_time
 	p.crashed.connect(_on_player_crashed.bind(p))
 	p.respawned.connect(_on_player_respawned.bind(p))
 	p.bumped.connect(_on_player_bumped.bind(p))

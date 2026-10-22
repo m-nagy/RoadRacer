@@ -2,7 +2,7 @@ class_name WeatherLayer
 extends Resource
 ## One kind of particle in a weather: rain drops, snowflakes, wind streaks...
 
-enum Shape { STREAK, DOT }
+enum Shape { STREAK, DOT, BLOB }   # BLOB: a soft round puff (fog)
 
 @export var amount := 100
 @export var lifetime := 1.0

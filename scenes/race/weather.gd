@@ -6,6 +6,7 @@ var _emitters: Array = []
 var _tint: ColorRect
 var _tex_streak: ImageTexture
 var _tex_dot: ImageTexture
+var _tex_blob: GradientTexture2D
 
 
 func _init() -> void:
@@ -16,6 +17,7 @@ func _init() -> void:
 func setup(weather: WeatherData, density := 1.0) -> void:
 	_tex_streak = _make_tex(2, 20)
 	_tex_dot = _make_tex(6, 6)
+	_tex_blob = _make_blob()
 	_tint = ColorRect.new()
 	_tint.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_tint.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -33,8 +35,25 @@ func _make_tex(w: int, h: int) -> ImageTexture:
 	return ImageTexture.create_from_image(img)
 
 
+func _make_blob() -> GradientTexture2D:
+	var g := Gradient.new()
+	g.set_color(0, Color.WHITE)
+	g.set_color(1, Color(1, 1, 1, 0))
+	var t := GradientTexture2D.new()
+	t.gradient = g
+	t.fill = GradientTexture2D.FILL_RADIAL
+	t.fill_from = Vector2(0.5, 0.5)
+	t.fill_to = Vector2(1.0, 0.5)
+	t.width = 64
+	t.height = 64
+	return t
+
+
 func _add(l: WeatherLayer, density: float) -> void:
-	var tex: Texture2D = _tex_streak if l.shape == WeatherLayer.Shape.STREAK else _tex_dot
+	var tex: Texture2D = _tex_dot
+	match l.shape:
+		WeatherLayer.Shape.STREAK: tex = _tex_streak
+		WeatherLayer.Shape.BLOB: tex = _tex_blob
 	var p := CPUParticles2D.new()
 	p.amount = maxi(1, roundi(l.amount * density))
 	p.lifetime = l.lifetime

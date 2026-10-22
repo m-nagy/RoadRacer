@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="StageVariant" format=3]
+
+[ext_resource type="Resource" path="res://data/stages/stage6.tres" id="1_3jrs5"]
+[ext_resource type="Script" path="res://data/stage_variant.gd" id="2_16c0e"]
+[ext_resource type="Resource" path="res://data/weather/none.tres" id="3_typvg"]
+
+[resource]
+script = ExtResource("2_16c0e")
+id = "dry_night_city"
+name = "Midnight Run"
+base = ExtResource("1_3jrs5")
+weather = ExtResource("3_typvg")
+time_of_day = "night"
+rng_seed = 1606
+v_slow = 300.0
+v_fast = 308.0

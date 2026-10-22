@@ -88,7 +88,7 @@ func _process(delta: float) -> void:
 	_penalty.visible = player.penalty > 0.0
 
 	# Fuel bar: 66 px of fill inside the 70 px frame, snapped to half pixels.
-	var frac := clampf(player.time_left / 100.0, 0.0, 1.0)
+	var frac := clampf(player.time_left / player.start_time, 0.0, 1.0)
 	var px := roundf(66.0 * frac * 2.0) / 2.0
 	if px != _fuel_px:
 		_fuel_px = px

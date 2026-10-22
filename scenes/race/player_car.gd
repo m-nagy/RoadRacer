@@ -22,7 +22,7 @@ const BRAKE_CAP_DECEL := 700.0
 const EDGE_HW := 22.0       # visible half width/length of the body, used against the road edge
 const EDGE_HH := 47.0
 const EDGE_MARGIN := 5.0    # how far into the curb a corner may go before it counts as hitting the side
-const START_TIME := 100.0
+const START_TIME := 100.0   # default; a short stage starts with less (see Difficulty.time_budget)
 const CRASH_PENALTY := 5.0
 
 var slot := 0
@@ -31,6 +31,7 @@ var world: World
 var state := State.RACING
 var speed := 0.0
 var vx := 0.0
+var start_time := START_TIME   # what the timer started at (the HUD fuel bar is relative to it)
 var time_left := START_TIME
 var score := 0.0
 var penalty := 0.0         # seconds of increased fuel consumption left

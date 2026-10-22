@@ -14,7 +14,7 @@ func setup(stage: StageData, number: int, unlocked: bool, best: int) -> void:
 		var km := stage.length / 8.0 / 1000.0   # 8 px = 1 displayed metre
 		var info := best_text
 		if not unlocked:
-			info = "Locked - clear %s first" % Stages.by_id(Stages.requirement(stage.id)).name
+			info = "Unlock: %s" % Stages.by_id(Stages.requirement(stage.id)).name
 		text = "C%d. %s\n%s  -  %.1f km\n%s" % [number, stage.name, stage.weather.label, km, info]
 		add_theme_font_size_override("font_size", 22)
 	else:

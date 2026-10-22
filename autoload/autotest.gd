@@ -23,6 +23,7 @@ var keydrive := false
 var _kd_state := {}
 var _flow_i := 0
 var diff := ""
+var cleared_arg := ""   # cleared=city,bridge: pretend only these stages are cleared (in memory only)
 var no_time := false
 var hit_kind := ""
 var police_at := -1.0
@@ -82,6 +83,8 @@ func _ready() -> void:
 			title_screen = int(a.get_slice("=", 1))
 		elif a.begins_with("tab="):
 			title_tab = int(a.get_slice("=", 1))
+		elif a.begins_with("cleared="):
+			cleared_arg = a.get_slice("=", 1)
 		elif a.begins_with("diff="):
 			diff = a.get_slice("=", 1)
 		elif a == "notime":
@@ -134,6 +137,8 @@ func _begin() -> void:
 	Game.prefs_applied = true
 	if diff != "":
 		SaveManager.difficulty = diff
+	if cleared_arg != "":
+		SaveManager.cleared.assign(Array(cleared_arg.split(",")) if cleared_arg != "none" else [])
 	if title_mode:
 		for i in players:
 			Game.players[i].ready = false
@@ -177,6 +182,8 @@ func _process(delta: float) -> void:
 				var devs: Array = scene.players_screen.devices
 				devs[0]["pos"] = -1
 				devs[1]["pos"] = 1
+			if title_screen == 1 and title_tab == 1:
+				scene.stage_select.select_tab(1)
 			if title_screen == 4 and title_tab == 1:
 				scene.options_screen.select_tab(1)
 		for s in shots:

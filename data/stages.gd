@@ -17,11 +17,23 @@ const CAMPAIGN: Array[StageData] = [
 
 const CHECKPOINTS := [0.25, 0.5, 0.75]
 
-## The challenge stages, built once from their variants.
-static var _challenges: Array[StageData] = []
+## The challenges: variants of campaign stages (see StageVariant), in the order Stage Select lists them.
+const VARIANTS: Array[StageVariant] = [
+	preload("res://data/challenges/rain_city.tres"),
+	preload("res://data/challenges/fog_country.tres"),
+	preload("res://data/challenges/gale_bridge.tres"),
+	preload("res://data/challenges/storm_desert.tres"),
+	preload("res://data/challenges/blizzard_snow.tres"),
+	preload("res://data/challenges/dry_night_city.tres"),
+]
+
+static var _challenges: Array[StageData] = []   # built from VARIANTS on first use
 
 
 static func challenges() -> Array[StageData]:
+	if _challenges.is_empty():
+		for v in VARIANTS:
+			_challenges.append(v.build())
 	return _challenges
 
 
@@ -30,14 +42,14 @@ static func by_id(id: String) -> StageData:
 	for s in CAMPAIGN:
 		if s.id == id:
 			return s
-	for s in _challenges:
+	for s in challenges():
 		if s.id == id:
 			return s
 	return CAMPAIGN[0]
 
 
 static func is_challenge(id: String) -> bool:
-	for s in _challenges:
+	for s in challenges():
 		if s.id == id:
 			return true
 	return false
@@ -45,7 +57,7 @@ static func is_challenge(id: String) -> bool:
 
 ## The list (campaign or challenges) this stage belongs to.
 static func list_of(id: String) -> Array[StageData]:
-	return _challenges if is_challenge(id) else CAMPAIGN
+	return challenges() if is_challenge(id) else CAMPAIGN
 
 
 ## Position of a stage in its own list, 0-based.
