@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="StageVariant" format=3]
+
+[ext_resource type="Resource" path="res://data/tracks/country.tres" id="1_base"]
+[ext_resource type="Script" path="res://data/stage_variant.gd" id="2_script"]
+[ext_resource type="Resource" path="res://data/weather/leaves.tres" id="3_weather"]
+
+[resource]
+script = ExtResource("2_script")
+id = "country_1"
+name = "Autumn Drive"
+description = "Falling leaves and open fields. Keep an eye on the bends."
+base = ExtResource("1_base")
+weather = ExtResource("3_weather")
+time_of_day = "day"
+length_scale = 0.4
+v_slow = 326.0
+v_fast = 309.0
+rng_seed = 2011

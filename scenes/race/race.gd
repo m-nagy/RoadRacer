@@ -13,6 +13,7 @@ class View:
 	var viewport: SubViewport
 	var camera: Camera2D
 	var hud: Hud
+	var weather: Weather
 	var shake := 0.0
 
 
@@ -89,6 +90,7 @@ func _ready() -> void:
 		view.viewport = vp
 		view.camera = cam
 		view.hud = hud
+		view.weather = wx
 		views.append(view)
 
 	for i in views.size():
@@ -206,6 +208,8 @@ func _update_cameras(delta: float) -> void:
 		var half_h := 360.0 / ZOOM
 		ranges.append(Vector2(-(cam.position.y + half_h) , -(cam.position.y - half_h)))
 	world.road.set_view_ranges(ranges)
+	for v in views:
+		v.weather.set_haze(world.fog_at(v.player.d()))
 
 
 func _input(event: InputEvent) -> void:
@@ -328,9 +332,26 @@ func _end_clear() -> void:
 	if next != "" and SaveManager.is_unlocked(next):
 		buttons.append(["Next Stage", func(): Game.go_to_race(next)])
 	buttons.append(["Replay Stage", func(): Game.go_to_race(_stage_id)])
+	if SaveManager.dirty:   # Auto-save is off and this clear has not been saved
+		buttons.append(["Save Now", _save_now])
 	buttons.append(["Title", Game.go_to_title])
-	var title := "ALL STAGES CLEAR!" if next == "" and not Stages.is_challenge(_stage_id) else "STAGE CLEAR!"
+	var title := "STAGE CLEAR!"
+	if next == "":
+		title = "ALL STAGES CLEAR!"
+	elif Stages.is_last_in_world(_stage_id):
+		title = "WORLD CLEAR!"
 	_show_menu("clear", title, lines, buttons)
+
+
+func _save_now() -> void:
+	SaveManager.write()
+	var b := get_viewport().gui_get_focus_owner()
+	if b is Button:
+		var next := b.find_next_valid_focus()
+		b.text = "Saved"
+		b.disabled = true
+		if next != null and next != b:
+			next.grab_focus()
 
 
 func _end_fail() -> void:
@@ -346,6 +367,6 @@ func _end_fail() -> void:
 		lines.append("%s: %d pts" % [tag, int(p.score)])
 	_show_menu("fail", "OUT OF FUEL", lines, [
 		["Retry Stage", func(): Game.go_to_race(_stage_id)],
-		["New Game", func(): Game.go_to_race(Stages.CAMPAIGN[0].id)],
+		["New Game", func(): Game.go_to_race(Stages.all()[0].id)],
 		["Title", Game.go_to_title],
 	])

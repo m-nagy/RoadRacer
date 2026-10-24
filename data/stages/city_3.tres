@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="StageVariant" format=3]
+
+[ext_resource type="Resource" path="res://data/tracks/city.tres" id="1_base"]
+[ext_resource type="Script" path="res://data/stage_variant.gd" id="2_script"]
+[ext_resource type="Resource" path="res://data/weather/rain.tres" id="3_weather"]
+
+[resource]
+script = ExtResource("2_script")
+id = "city_3"
+name = "Neon Downpour"
+description = "Heavy rain after dark on a narrower road with thicker traffic."
+base = ExtResource("1_base")
+weather = ExtResource("3_weather")
+time_of_day = "night"
+length_scale = 0.5
+lane_change = -1
+traffic_scale = 1.15
+v_slow = 272.0
+v_fast = 286.0
+rng_seed = 2003

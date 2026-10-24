@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="WorldData" format=3]
+
+[ext_resource type="Script" path="res://data/world_data.gd" id="1_script"]
+[ext_resource type="Script" path="res://data/stage_variant.gd" id="9_variant"]
+[ext_resource type="Resource" path="res://data/stages/city_1.tres" id="2_city_1"]
+[ext_resource type="Resource" path="res://data/stages/city_2.tres" id="3_city_2"]
+[ext_resource type="Resource" path="res://data/stages/city_3.tres" id="4_city_3"]
+
+[resource]
+script = ExtResource("1_script")
+id = "city"
+name = "City Centre"
+stages = Array[ExtResource("9_variant")]([ExtResource("2_city_1"), ExtResource("3_city_2"), ExtResource("4_city_3")])

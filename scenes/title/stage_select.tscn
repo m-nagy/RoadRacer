@@ -12,58 +12,40 @@ grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("1_select")
 
-[node name="Center" type="CenterContainer" parent="."]
+[node name="Margin" type="MarginContainer" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_top = 170.0
-offset_bottom = -52.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
+theme_override_constants/margin_left = 60
+theme_override_constants/margin_top = 150
+theme_override_constants/margin_right = 60
+theme_override_constants/margin_bottom = 56
 
-[node name="Box" type="VBoxContainer" parent="Center"]
+[node name="Box" type="VBoxContainer" parent="Margin"]
 layout_mode = 2
-theme_override_constants/separation = 14
+mouse_filter = 2
+theme_override_constants/separation = 10
 
-[node name="Tabs" type="HBoxContainer" parent="Center/Box"]
+[node name="Scroll" type="ScrollContainer" parent="Margin/Box"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_constants/separation = 16
-alignment = 1
-
-[node name="CampaignTab" type="Button" parent="Center/Box/Tabs"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(300, 56)
-layout_mode = 2
-theme_override_font_sizes/font_size = 26
-text = "● Campaign"
-
-[node name="ChallengesTab" type="Button" parent="Center/Box/Tabs"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(300, 56)
-layout_mode = 2
-theme_override_font_sizes/font_size = 26
-text = "○ Challenges"
-
-[node name="Scroll" type="ScrollContainer" parent="Center/Box"]
-custom_minimum_size = Vector2(1150, 256)
-layout_mode = 2
+size_flags_vertical = 3
 follow_focus = true
 horizontal_scroll_mode = 0
 
-[node name="Grid" type="GridContainer" parent="Center/Box/Scroll"]
+[node name="Worlds" type="VBoxContainer" parent="Margin/Box/Scroll"]
 unique_name_in_owner = true
 layout_mode = 2
-size_flags_horizontal = 6
-theme_override_constants/h_separation = 16
-theme_override_constants/v_separation = 16
-columns = 3
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
 
-[node name="BackButton" type="Button" parent="Center/Box"]
+[node name="BackButton" type="Button" parent="Margin/Box"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(300, 64)
+custom_minimum_size = Vector2(300, 56)
 layout_mode = 2
 size_flags_horizontal = 4
 text = "Back"

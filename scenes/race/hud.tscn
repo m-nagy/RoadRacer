@@ -160,7 +160,9 @@ theme_override_colors/font_color = Color(0.784314, 0.901961, 1, 1)
 theme_override_colors/font_outline_color = Color(0.08, 0.05, 0.03, 1)
 theme_override_constants/outline_size = 7
 theme_override_font_sizes/font_size = 18
-text = "STAGE 1"
+text = "STAGE 1-1"
+clip_text = true
+text_overrun_behavior = 3
 
 [node name="Overlay" type="Control" parent="."]
 layout_mode = 1

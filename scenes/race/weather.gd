@@ -4,6 +4,8 @@ extends CanvasLayer
 
 var _emitters: Array = []
 var _tint: ColorRect
+var _haze: ColorRect          # screen haze while the player is inside a fog bank
+var _haze_max := 0.0
 var _tex_streak: ImageTexture
 var _tex_dot: ImageTexture
 var _tex_blob: GradientTexture2D
@@ -26,8 +28,21 @@ func setup(weather: WeatherData, density := 1.0, tint_scale := 1.0) -> void:
 	add_child(_tint)
 	for l in weather.layers:
 		_add(l, density)
+	if weather.fog_banks > 0.0:
+		_haze_max = weather.fog_haze * tint_scale
+		_haze = ColorRect.new()
+		_haze.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_haze.set_anchors_preset(Control.PRESET_FULL_RECT)
+		_haze.color = Color(weather.fog_color, 0.0)
+		add_child(_haze)
 	get_viewport().size_changed.connect(_layout)
 	_layout()
+
+
+## 0..1: how deep in fog the player is. Fades the screen haze in and out as the car enters and leaves a bank.
+func set_haze(k: float) -> void:
+	if _haze != null:
+		_haze.color.a = _haze_max * k
 
 
 func _make_tex(w: int, h: int) -> ImageTexture:

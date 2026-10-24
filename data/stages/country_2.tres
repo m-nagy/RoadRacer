@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="StageVariant" format=3]
+
+[ext_resource type="Resource" path="res://data/tracks/country.tres" id="1_base"]
+[ext_resource type="Script" path="res://data/stage_variant.gd" id="2_script"]
+[ext_resource type="Resource" path="res://data/weather/fog.tres" id="3_weather"]
+
+[resource]
+script = ExtResource("2_script")
+id = "country_2"
+name = "Misty Fields"
+description = "Banks of fog roll over the road: you only see the gaps."
+base = ExtResource("1_base")
+weather = ExtResource("3_weather")
+time_of_day = "day"
+length_scale = 0.45
+traffic_scale = 1.05
+v_slow = 300.0
+v_fast = 310.0
+rng_seed = 2012
